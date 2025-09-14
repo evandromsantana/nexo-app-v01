@@ -36,7 +36,7 @@ export default function EditProfileScreen() {
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images, // Corrected line
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
@@ -105,7 +105,7 @@ export default function EditProfileScreen() {
 
       <Text style={styles.label}>Bio</Text>
       <TextInput
-        style={[styles.input, styles.textArea]}
+        style={[styles.input, styles.textArea]} 
         value={profile.bio || ''}
         onChangeText={(text) => setProfile(p => ({ ...p, bio: text }))}
         multiline
