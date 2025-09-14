@@ -1,5 +1,6 @@
 // src/app/(auth)/welcome.tsx
 
+import LogoNexo4Pro from "@/components/Logo";
 import { Link } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -9,6 +10,7 @@ import { COLORS } from "../../constants/Colors";
 const WelcomeScreen = () => {
   return (
     <View style={styles.container}>
+      <LogoNexo4Pro />
       <Text style={styles.title}>Bem-vindo ao Nexo</Text>
       <Text style={styles.subtitle}>
         Sua comunidade de troca de conhecimento.

@@ -1,134 +1,77 @@
-// src/app/(auth)/login.tsx
+import React, { useState } from 'react';
+import { View, Button, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { Link } from 'expo-router';
+import { useAuth } from '../../hooks/useAuth';
+import { COLORS } from '../../constants/colors';
 
-import { Link, useRouter } from "expo-router";
-import React, { useState } from "react";
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { COLORS } from "../../constants/Colors";
+export default function LoginScreen() {
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  // Add loading/error state later
 
-// Estrutura do componente como função anônima
-const LoginScreen = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const router = useRouter();
-
-  const handleLogin = () => {
-    // A lógica de autenticação com Firebase será adicionada aqui
-    console.log("Login attempt:", { email, password });
-    Alert.alert("Login", `Email: ${email}\nSenha: ${password}`);
+  const handleLogin = async () => {
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error(error);
+      // Handle login error (e.g., show an alert)
+    }
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>‹ Voltar</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>Entrar</Text>
-
+      <Text style={styles.title}>Login</Text>
       <TextInput
         style={styles.input}
-        placeholder="Seu e-mail"
-        placeholderTextColor="#999"
+        placeholder="Email"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
       />
-
-      {/* O fluxo de autenticação inclui uma tela de login com campos para e-mail e senha */}
       <TextInput
         style={styles.input}
-        placeholder="Sua senha"
-        placeholderTextColor="#999"
+        placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
-
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Acessar</Text>
-      </TouchableOpacity>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Não tem uma conta?</Text>
-        <Link href="/register" asChild>
-          <TouchableOpacity>
-            <Text style={styles.footerLink}> Cadastre-se</Text>
-          </TouchableOpacity>
-        </Link>
-      </View>
+      <Button title="Login" onPress={handleLogin} />
+      <Link href="/register" asChild>
+        <Pressable style={styles.link}>
+          <Text>Não tem uma conta? Cadastre-se</Text>
+        </Pressable>
+      </Link>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background, // Cinza Claro (Fundo)
-    justifyContent: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
     padding: 20,
   },
-  backButton: {
-    position: "absolute",
-    top: 60,
-    left: 20,
-  },
-  backButtonText: {
-    color: COLORS.primary, // Azul Petróleo Escuro
-    fontSize: 16,
-  },
   title: {
-    fontSize: 28, // H1 (Títulos de Tela): 28px, Bold
-    fontWeight: "bold",
-    color: COLORS.primary, // Azul Petróleo Escuro
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.primary,
     marginBottom: 30,
-    textAlign: "center",
   },
   input: {
-    backgroundColor: COLORS.white, // Branco
-    width: "100%",
-    padding: 15,
-    borderRadius: 8,
+    width: '100%',
+    height: 50,
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    paddingHorizontal: 15,
     marginBottom: 15,
-    fontSize: 16, // Corpo (Texto principal): 16px, Regular
     borderWidth: 1,
-    borderColor: "#ddd",
-    color: COLORS.text, // Cinza Escuro (Texto)
+    borderColor: '#ddd',
   },
-  button: {
-    backgroundColor: COLORS.accent, // Laranja Queimado (Ação/Destaque)
-    paddingVertical: 15,
-    borderRadius: 8,
-    width: "100%",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: COLORS.white, // Branco
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
+  link: {
     marginTop: 20,
   },
-  footerText: {
-    fontSize: 16,
-    color: COLORS.text, // Cinza Escuro (Texto)
-  },
-  footerLink: {
-    fontSize: 16,
-    color: COLORS.accent, // Laranja Queimado (Ação/Destaque)
-    fontWeight: "bold",
-  },
 });
-
-export default LoginScreen;
