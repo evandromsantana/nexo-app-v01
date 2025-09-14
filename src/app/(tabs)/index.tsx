@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { COLORS } from '../../constants/colors';
@@ -9,6 +10,7 @@ import { UserProfile } from '../../types/user';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [otherUsers, setOtherUsers] = useState<UserProfile[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -106,6 +108,7 @@ export default function HomeScreen() {
                 }}
                 title={otherUser.displayName}
                 pinColor={COLORS.primary}
+                onPress={() => router.push(`/user/${otherUser.uid}`)}
               />
             )
           ))}

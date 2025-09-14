@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
 import { getUserProfile, updateUserProfile } from '../../api/firestore';
+import { uploadImage } from '../../api/cloudinary';
 import { UserProfile } from '../../types/user';
 import { COLORS } from '../../constants/colors';
 
@@ -12,6 +13,7 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [newImage, setNewImage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function EditProfileScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.7,
     });
 
     if (!result.canceled) {
@@ -47,18 +49,35 @@ export default function EditProfileScreen() {
 
   const handleUpdate = async () => {
     if (!user) return;
+    setIsUploading(true);
     try {
-      // TODO: Upload newImage to Cloudinary and get URL
+      let imageUrl = profile.photoUrl;
+      if (newImage) {
+        imageUrl = await uploadImage(newImage);
+      }
 
-      const dataToUpdate = { ...profile };
-      // if (newImageUrl) {
-      //   dataToUpdate.photoUrl = newImageUrl;
-      // }
+      const skillsToTeach = profile.skillsToTeach && typeof profile.skillsToTeach === 'string'
+        ? (profile.skillsToTeach as string).split(',').map(s => s.trim())
+        : profile.skillsToTeach;
+        
+      const skillsToLearn = profile.skillsToLearn && typeof profile.skillsToLearn === 'string'
+        ? (profile.skillsToLearn as string).split(',').map(s => s.trim())
+        : profile.skillsToLearn;
+
+      const dataToUpdate = {
+        displayName: profile.displayName,
+        bio: profile.bio,
+        photoUrl: imageUrl,
+        skillsToTeach,
+        skillsToLearn,
+      };
 
       await updateUserProfile(user.uid, dataToUpdate);
       router.back();
     } catch (error) {
       console.error("Failed to update profile:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -66,7 +85,7 @@ export default function EditProfileScreen() {
     return <ActivityIndicator style={styles.centered} size="large" color={COLORS.primary} />;
   }
 
-  const photoSource = newImage ? { uri: newImage } : (profile.photoUrl ? { uri: profile.photoUrl } : require('../../assets/images/default-avatar.png'));
+  const photoSource = newImage ? { uri: newImage } : (profile.photoUrl ? { uri: profile.photoUrl } : undefined);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -84,9 +103,33 @@ export default function EditProfileScreen() {
         onChangeText={(text) => setProfile(p => ({ ...p, displayName: text }))}
       />
 
-      {/* ... other fields ... */}
+      <Text style={styles.label}>Bio</Text>
+      <TextInput
+        style={[styles.input, styles.textArea]}
+        value={profile.bio || ''}
+        onChangeText={(text) => setProfile(p => ({ ...p, bio: text }))}
+        multiline
+      />
 
-      <Button title="Salvar Alterações" onPress={handleUpdate} />
+      <Text style={styles.label}>Habilidades para Ensinar (separadas por vírgula)</Text>
+      <TextInput
+        style={styles.input}
+        value={Array.isArray(profile.skillsToTeach) ? profile.skillsToTeach.join(', ') : ''}
+        onChangeText={(text) => setProfile(p => ({ ...p, skillsToTeach: text as any }))}
+      />
+
+      <Text style={styles.label}>Habilidades para Aprender (separadas por vírgula)</Text>
+      <TextInput
+        style={styles.input}
+        value={Array.isArray(profile.skillsToLearn) ? profile.skillsToLearn.join(', ') : ''}
+        onChangeText={(text) => setProfile(p => ({ ...p, skillsToLearn: text as any }))}
+      />
+
+      {isUploading ? (
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      ) : (
+        <Button title="Salvar Alterações" onPress={handleUpdate} />
+      )}
     </ScrollView>
   );
 }
@@ -100,4 +143,5 @@ const styles = StyleSheet.create({
   changePhotoText: { color: COLORS.primary, fontSize: 16, marginBottom: 20 },
   label: { fontSize: 16, color: COLORS.grayDark, marginBottom: 5, alignSelf: 'flex-start' },
   input: { width: '100%', minHeight: 50, backgroundColor: COLORS.white, borderRadius: 10, paddingHorizontal: 15, marginBottom: 20, borderWidth: 1, borderColor: '#ddd' },
+  textArea: { height: 100, textAlignVertical: 'top', paddingVertical: 15 },
 });
