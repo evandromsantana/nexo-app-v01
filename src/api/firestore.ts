@@ -1,7 +1,9 @@
-import { getFirestore, doc, setDoc, serverTimestamp, updateDoc, collection, getDocs, query, where, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, updateDoc, collection, getDocs, query, where, getDoc, addDoc, orderBy, onSnapshot } from 'firebase/firestore';
 import { User as FirebaseUser } from 'firebase/auth';
 import { geohashForLocation } from 'geofire-common';
 import { UserProfile } from '../types/user';
+import { Chat, ChatWithId } from '../types/chat'; // Import ChatWithId
+import { Proposal } from '../types/proposal';
 
 const db = getFirestore();
 
@@ -65,4 +67,108 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 export const updateUserProfile = async (uid: string, data: Partial<UserProfile>) => {
   const userRef = doc(db, 'users', uid);
   await updateDoc(userRef, data);
+};
+
+export const createProposal = async (proposerId: string, recipientId: string, skillRequested: string) => {
+  const proposalsCol = collection(db, 'proposals');
+
+  const newProposal = {
+    proposerId,
+    recipientId,
+    skillRequested,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  await addDoc(proposalsCol, newProposal);
+};
+
+export const getProposalsForUser = async (uid: string) => {
+  const proposalsCol = collection(db, 'proposals');
+  
+  const receivedQuery = query(proposalsCol, where('recipientId', '==', uid));
+  const receivedSnapshot = await getDocs(receivedQuery);
+  const received = receivedSnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Omit<Proposal, 'id'>) }));
+
+  const sentQuery = query(proposalsCol, where('proposerId', '==', uid));
+  const sentSnapshot = await getDocs(sentQuery);
+  const sent = sentSnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Omit<Proposal, 'id'>) }));
+
+  return { received, sent };
+};
+
+export const createChatRoom = async (user1Id: string, user2Id: string) => {
+    const chatsCol = collection(db, 'chats');
+    const sortedUsers = [user1Id, user2Id].sort();
+    
+    const q = query(chatsCol, where('users', '==', sortedUsers));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        await addDoc(chatsCol, {
+            users: sortedUsers,
+            lastMessage: 'Proposta aceita! Diga olá.',
+            updatedAt: serverTimestamp(),
+        });
+    }
+};
+
+export const updateProposalStatus = async (proposalId: string, status: 'accepted' | 'declined' | 'completed', proposerId: string, recipientId: string) => {
+    const proposalRef = doc(db, 'proposals', proposalId);
+    await updateDoc(proposalRef, {
+        status: status,
+        updatedAt: serverTimestamp(),
+    });
+
+    if (status === 'accepted') {
+        await createChatRoom(proposerId, recipientId);
+    }
+};
+
+export const getChatsForUser = async (uid: string): Promise<ChatWithId[]> => {
+    const chatsCol = collection(db, 'chats');
+    const q = query(chatsCol, where('users', 'array-contains', uid), orderBy('updatedAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    const chats = querySnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Omit<Chat, 'id'>) }));
+    return chats as ChatWithId[];
+};
+
+export const getMessagesForChat = (chatId: string, callback: (messages: any[]) => void) => {
+    const messagesCol = collection(db, 'chats', chatId, 'messages');
+    const q = query(messagesCol, orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const messages = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                _id: doc.id,
+                text: data.text,
+                createdAt: data.createdAt.toDate(),
+                user: {
+                    _id: data.senderId,
+                }
+            };
+        });
+        callback(messages);
+    });
+
+    return unsubscribe; // Return the unsubscribe function to be called on cleanup
+};
+
+export const sendMessage = async (chatId: string, senderId: string, text: string) => {
+    const messagesCol = collection(db, 'chats', chatId, 'messages');
+    // Add the new message
+    await addDoc(messagesCol, {
+        text,
+        senderId,
+        createdAt: serverTimestamp(),
+    });
+
+    // Update the last message on the chat document
+    const chatRef = doc(db, 'chats', chatId);
+    await updateDoc(chatRef, {
+        lastMessage: text,
+        updatedAt: serverTimestamp(),
+    });
 };

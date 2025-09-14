@@ -8,9 +8,9 @@ type User = FirebaseUser;
 interface AuthContextData {
   user: User | null;
   isLoading: boolean;
-  login: (email, password) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email, password, displayName) => Promise<void>;
+  register: (email: string, password: string, displayName: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
@@ -40,9 +40,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await signOut(auth);
   };
 
-  const register = async (email, password, displayName) => {
+  const register = async (email: string, password: string, displayName: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    // Create user profile in Firestore
     await createUserProfile(userCredential.user, displayName);
   };
 

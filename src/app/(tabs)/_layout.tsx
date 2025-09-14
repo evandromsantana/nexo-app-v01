@@ -1,6 +1,6 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
-import { Home, Mail, MessageSquare, User } from 'lucide-react-native';
+import React from "react";
+import { Tabs } from "expo-router";
+import { Home, Mail, MessageSquare, User } from "lucide-react-native";
 import { COLORS } from '../../constants/colors';
 
 export default function TabLayout() {
@@ -14,33 +14,34 @@ export default function TabLayout() {
           borderTopWidth: 0,
         },
         headerShown: false,
-      }}
-    >
+      }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Início',
+          title: "Início",
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="proposals"
         options={{
-          title: 'Propostas',
+          title: "Propostas",
           tabBarIcon: ({ color, size }) => <Mail color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Chat',
-          tabBarIcon: ({ color, size }) => <MessageSquare color={color} size={size} />,
+          title: "Chat",
+          tabBarIcon: ({ color, size }) => (
+            <MessageSquare color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Perfil',
+          title: "Perfil",
           tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />

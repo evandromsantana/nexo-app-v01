@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
-import { View, Button, Text, TextInput, StyleSheet, Pressable } from 'react-native';
-import { Link } from 'expo-router';
-import { useAuth } from '../../hooks/useAuth';
+import React, { useState } from "react";
+import {
+  View,
+  Button,
+  Text,
+  TextInput,
+  StyleSheet,
+  Pressable,
+} from "react-native";
+import { Link } from "expo-router";
+import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from '../../constants/colors';
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   // Add loading/error state later
 
   const handleLogin = async () => {
@@ -50,26 +57,26 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: COLORS.background,
     padding: 20,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.primary,
     marginBottom: 30,
   },
   input: {
-    width: '100%',
+    width: "100%",
     height: 50,
     backgroundColor: COLORS.white,
     borderRadius: 10,
     paddingHorizontal: 15,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
   },
   link: {
     marginTop: 20,

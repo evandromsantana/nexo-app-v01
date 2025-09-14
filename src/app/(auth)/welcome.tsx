@@ -4,7 +4,7 @@ import LogoNexo4Pro from "@/components/Logo";
 import { Link } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { COLORS } from "../../constants/Colors";
+import { COLORS } from "../../constants/colors";
 
 // Estrutura do componente como função anônima, conforme 04-CODING-STANDARDS.md
 const WelcomeScreen = () => {
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16, // Corpo (Texto principal): 16px, Regular
-    color: COLORS.text,
+    color: COLORS.grayDark,
     textAlign: "center",
     marginBottom: 40,
     fontFamily: "NunitoSans-Regular",

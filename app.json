@@ -31,6 +31,20 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+
+      },
+      "firebaseApiKey": "AIzaSyClxPWcb4DXndPq4Q8FK4b8CfsMT6mH-fE",
+      "firebaseAuthDomain": "nexo-app-v2.firebaseapp.com",
+      "firebaseProjectId": "nexo-app-v2",
+      "firebaseStorageBucket": "nexo-app-v2.appspot.com",
+      "firebaseMessagingSenderId": "552609001861",
+      "firebaseAppId": "1:552609001861:web:0307a4d1d9b9ada17254ec",
+      "cloudinaryCloudName": "dbdzy07lz",
+      "cloudinaryApiKey": "1PVYmOXusKUSs71JIcHtUE2tMBw"
     }
   },
   "router": {
