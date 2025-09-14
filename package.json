@@ -39,7 +39,8 @@
     "react-native-svg": "^15.13.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "expo-linear-gradient": "~15.0.7"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
