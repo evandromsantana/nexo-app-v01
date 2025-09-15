@@ -1,6 +1,4 @@
-import Constants from 'expo-constants';
-
-const cloudName = Constants.expoConfig?.extra?.cloudinaryCloudName;
+const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const uploadPreset = 'unsigned_upload'; // IMPORTANT: This must be created in your Cloudinary settings
 
 export const uploadImage = async (uri: string) => {
