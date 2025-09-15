@@ -1,7 +1,7 @@
-import React from "react";
 import { Tabs } from "expo-router";
 import { Home, Mail, MessageSquare, User } from "lucide-react-native";
-import { COLORS } from '../../constants/colors';
+import React from "react";
+import { COLORS } from "../../constants/colors";
 
 export default function TabLayout() {
   return (
