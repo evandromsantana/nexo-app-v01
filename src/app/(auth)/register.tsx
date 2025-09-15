@@ -1,3 +1,4 @@
+import LogoNexo4Pro from "@/components/Logo";
 import {
   COLORS,
   FONT_SIZE,
@@ -59,8 +60,12 @@ export default function RegisterScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.logoContainer}>
-        <Text style={styles.title}>Cadastro</Text>
-        <Text style={styles.subtitle}>Crie sua conta para começar 🚀</Text>
+        <LogoNexo4Pro />
+
+        <Text style={styles.title}>Crie a sua Conta</Text>
+        <Text style={styles.subtitle}>
+          Comece a trocar conhecimento hoje mesmo.
+        </Text>
       </View>
 
       <View style={styles.form}>

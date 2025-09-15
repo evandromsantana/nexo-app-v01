@@ -58,9 +58,7 @@ export default function LoginScreen() {
       <View style={styles.logoContainer}>
         <LogoNexo4Pro />
         <Text style={styles.title}>Bem-vindo de volta</Text>
-        <Text style={styles.subtitle}>
-          Faça login para continuar explorando 🚀
-        </Text>
+        <Text style={styles.subtitle}>Seu conhecimento é a sua moeda.</Text>
       </View>
 
       {/* Formulário */}
