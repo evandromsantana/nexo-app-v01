@@ -17,6 +17,15 @@ import { COLORS } from "../../constants/colors";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfile } from "../../types/user";
 
+// Interface for the form data state
+interface ProfileFormData {
+  displayName: string;
+  bio: string;
+  photoUrl: string | null;
+  skillsToTeach: string;
+  skillsToLearn: string;
+}
+
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -24,7 +33,9 @@ export default function ProfileScreen() {
 
   // Modal de edição
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editProfile, setEditProfile] = useState<Partial<UserProfile>>({});
+  const [formData, setFormData] = useState<ProfileFormData>(
+    {} as ProfileFormData
+  );
   const [newImage, setNewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -56,7 +67,14 @@ export default function ProfileScreen() {
   };
 
   const openEditModal = () => {
-    setEditProfile(userProfile || {});
+    if (!userProfile) return;
+    setFormData({
+      displayName: userProfile.displayName || "",
+      bio: userProfile.bio || "",
+      photoUrl: userProfile.photoUrl,
+      skillsToTeach: userProfile.skillsToTeach?.join(", ") || "",
+      skillsToLearn: userProfile.skillsToLearn?.join(", ") || "",
+    });
     setNewImage(null);
     setIsEditOpen(true);
   };
@@ -66,33 +84,31 @@ export default function ProfileScreen() {
     setIsUploading(true);
 
     try {
-      let imageUrl = editProfile.photoUrl;
+      let imageUrl = formData.photoUrl;
       if (newImage) imageUrl = await uploadImage(newImage);
 
-      const skillsToTeach: string[] =
-        typeof editProfile.skillsToTeach === "string"
-          ? editProfile.skillsToTeach.split(",").map((s) => s.trim())
-          : Array.isArray(editProfile.skillsToTeach)
-          ? editProfile.skillsToTeach
-          : [];
-
-      const skillsToLearn: string[] =
-        typeof editProfile.skillsToLearn === "string"
-          ? editProfile.skillsToLearn.split(",").map((s) => s.trim())
-          : Array.isArray(editProfile.skillsToLearn)
-          ? editProfile.skillsToLearn
-          : [];
+      const skillsToTeach = formData.skillsToTeach
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const skillsToLearn = formData.skillsToLearn
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
 
       const dataToUpdate: Partial<UserProfile> = {
-        displayName: editProfile.displayName,
-        bio: editProfile.bio,
+        displayName: formData.displayName,
+        bio: formData.bio,
         photoUrl: imageUrl,
         skillsToTeach,
         skillsToLearn,
       };
 
       await updateUserProfile(user.uid, dataToUpdate);
-      setUserProfile((prev) => ({ ...prev, ...dataToUpdate }));
+      setUserProfile((prev) => {
+        if (!prev) return null;
+        return { ...prev, ...dataToUpdate };
+      });
       setIsEditOpen(false);
     } catch (error) {
       console.error("Failed to update profile:", error);
@@ -112,8 +128,23 @@ export default function ProfileScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.name}>{userProfile?.displayName || "Usuário"}</Text>
-        <Text style={styles.email}>{userProfile?.email}</Text>
+        <View style={styles.profileavatar}>
+          <Image
+            source={
+              newImage
+                ? { uri: newImage }
+                : formData.photoUrl
+                ? { uri: formData.photoUrl }
+                : undefined
+            }
+            style={styles.avatar}
+          />
+
+          <Text style={styles.name}>
+            {userProfile?.displayName || "Usuário"}
+          </Text>
+          <Text style={styles.email}>{userProfile?.email}</Text>
+        </View>
 
         <View style={styles.infoBox}>
           <Text style={styles.infoTitle}>Saldo de Tempo</Text>
@@ -159,8 +190,8 @@ export default function ProfileScreen() {
                 source={
                   newImage
                     ? { uri: newImage }
-                    : editProfile.photoUrl
-                    ? { uri: editProfile.photoUrl }
+                    : formData.photoUrl
+                    ? { uri: formData.photoUrl }
                     : undefined
                 }
                 style={styles.avatar}
@@ -172,9 +203,9 @@ export default function ProfileScreen() {
               <Text style={styles.label}>Nome de Exibição</Text>
               <TextInput
                 style={styles.input}
-                value={editProfile.displayName || ""}
+                value={formData.displayName}
                 onChangeText={(text) =>
-                  setEditProfile((p) => ({ ...p, displayName: text }))
+                  setFormData((p) => ({ ...p, displayName: text }))
                 }
                 placeholder="Digite seu nome"
                 placeholderTextColor={COLORS.grayDark + "99"}
@@ -183,9 +214,9 @@ export default function ProfileScreen() {
               <Text style={styles.label}>Bio</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
-                value={editProfile.bio || ""}
+                value={formData.bio}
                 onChangeText={(text) =>
-                  setEditProfile((p) => ({ ...p, bio: text }))
+                  setFormData((p) => ({ ...p, bio: text }))
                 }
                 multiline
                 placeholder="Escreva algo sobre você"
@@ -197,13 +228,9 @@ export default function ProfileScreen() {
               </Text>
               <TextInput
                 style={styles.input}
-                value={
-                  Array.isArray(editProfile.skillsToTeach)
-                    ? editProfile.skillsToTeach.join(", ")
-                    : ""
-                }
+                value={formData.skillsToTeach}
                 onChangeText={(text) =>
-                  setEditProfile((p) => ({ ...p, skillsToTeach: text as any }))
+                  setFormData((p) => ({ ...p, skillsToTeach: text }))
                 }
                 placeholder="Ex.: Fotografia, Programação"
                 placeholderTextColor={COLORS.grayDark + "99"}
@@ -214,13 +241,9 @@ export default function ProfileScreen() {
               </Text>
               <TextInput
                 style={styles.input}
-                value={
-                  Array.isArray(editProfile.skillsToLearn)
-                    ? editProfile.skillsToLearn.join(", ")
-                    : ""
-                }
+                value={formData.skillsToLearn}
                 onChangeText={(text) =>
-                  setEditProfile((p) => ({ ...p, skillsToLearn: text as any }))
+                  setFormData((p) => ({ ...p, skillsToLearn: text }))
                 }
                 placeholder="Ex.: Inglês, Culinária"
                 placeholderTextColor={COLORS.grayDark + "99"}
@@ -253,11 +276,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  profileavatar: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 15,
+
+    marginTop: 20,
+    width: "100%",
+  },
   name: {
     fontSize: 26,
     fontWeight: "bold" as any,
     color: COLORS.primary,
-    marginTop: 20,
   },
   email: {
     fontSize: 16,
