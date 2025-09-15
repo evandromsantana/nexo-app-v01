@@ -99,7 +99,7 @@ export default function HomeScreen() {
           ],
         },
       }));
-    const index = new Supercluster<PointFeature>({
+    const index = new Supercluster({
       radius: 60,
       maxZoom: 20,
     });

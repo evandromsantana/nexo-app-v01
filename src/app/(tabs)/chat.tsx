@@ -45,7 +45,7 @@ export default function ChatScreen() {
       if (profilesToFetch.length > 0) {
         const fetchedProfiles = await Promise.all(profilesToFetch.map(id => getUserProfile(id)));
         
-        const newProfiles = fetchedProfiles.reduce((acc, profile) => {
+        const newProfiles = fetchedProfiles.reduce((acc: Record<string, UserProfile>, profile) => {
           if (profile) {
             acc[profile.uid] = profile;
           }

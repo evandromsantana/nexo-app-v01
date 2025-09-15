@@ -1,25 +1,26 @@
 // constants/colors.ts
 export const COLORS = {
-  // Cores principais
-  primary: "#EA1D2C",       // Vermelho forte (marca principal / call to action)
-  primaryLight: "#FF6B6B",  // Vermelho suave para hover ou destaque
-  secondary: "#4F4F4F",     // Cinza escuro elegante
-  accent: "#FFC300",        // Amarelo vibrante (CTA secundário ou detalhes)
+  // 🎨 Retro Core
+  primary: '#FF6B6B',     // Coral Retrô (quente, vibrante)
+  secondary: '#355070',   // Azul Jeans (profundo, vintage)
+  accent: '#F7B801',      // Amarelo Mostarda (toque nostálgico)
 
-  // Estados
-  success: "#28A745",       // Verde sucesso
-  danger: "#C70039",        // Vermelho erro
-  warning: "#FF851B",       // Laranja aviso
-  info: "#3498DB",          // Azul informação
+  // 🌈 Estados
+  success: '#6A994E',     // Verde Musgo (positivo, natural retrô)
+  danger: '#BC4749',      // Vermelho Vinho (alertas, dramático)
+  warning: '#E09F3E',     // Laranja Queimado (avisos retrô)
+  info: '#577590',        // Azul Acinzentado (informação suave)
 
-  // Neutros
-  white: "#FFFFFF",
-  black: "#000000",
-  grayLight: "#F7F7F7",
-  gray: "#BFBFBF",
-  grayDark: "#333333",
+  // ⚪ Neutros
+  white: '#FFF8F0',       // Off-white amarelado (retro paper)
+  black: '#1B1B1B',       // Preto vintage (menos intenso)
+  grayLight: '#E6DADA',   // Cinza esmaecido
+  gray: '#B7B7B7',        // Cinza clássico
+  grayDark: '#3A3A3A',    // Cinza carvão
 
-  // Layout / fundos
-  background: "#FAFAFA",    // fundo principal da app
-  card: "#FFFFFF",           // fundo de cards / inputs
+  // 📱 Layout / fundos
+  background: '#FAF3E0',  // Bege Claro (retro background)
+  card: '#FFFFFF',        // Branco para contraste em cards
+  textPrimary: '#2F2F2F', // Preto suave para leitura
+  textSecondary: '#6D6D6D', // Cinza médio retrô
 };
