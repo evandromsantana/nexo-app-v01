@@ -1,4 +1,4 @@
-import { getFirestore, doc, setDoc, serverTimestamp, updateDoc, collection, getDocs, query, where, getDoc, addDoc, orderBy, onSnapshot } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, updateDoc, collection, getDocs, query, where, getDoc, addDoc, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { User as FirebaseUser } from 'firebase/auth';
 import { geohashForLocation } from 'geofire-common';
 import { UserProfile } from '../types/user';
@@ -169,4 +169,24 @@ export const sendMessage = async (chatId: string, senderId: string, text: string
         lastMessage: text,
         updatedAt: serverTimestamp(),
     });
+};
+
+// =================================================================
+// FAVORITE FUNCTIONS
+// =================================================================
+
+export const addFavorite = async (currentUserId: string, favoritedUserId: string): Promise<void> => {
+  const favoriteRef = doc(db, 'users', currentUserId, 'favorites', favoritedUserId);
+  await setDoc(favoriteRef, { savedAt: serverTimestamp() });
+};
+
+export const removeFavorite = async (currentUserId: string, favoritedUserId: string): Promise<void> => {
+  const favoriteRef = doc(db, 'users', currentUserId, 'favorites', favoritedUserId);
+  await deleteDoc(favoriteRef);
+};
+
+export const isFavorite = async (currentUserId: string, favoritedUserId: string): Promise<boolean> => {
+  const favoriteRef = doc(db, 'users', currentUserId, 'favorites', favoritedUserId);
+  const docSnap = await getDoc(favoriteRef);
+  return docSnap.exists();
 };
