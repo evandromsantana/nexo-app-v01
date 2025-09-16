@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../../hooks/useAuth';
 import { getUserProfile, createProposal } from '../../api/firestore';
-import { UserProfile } from '../../types/user';
+import { UserProfile, TaughtSkill } from '../../types/user';
 import { COLORS } from '../../constants/colors';
 
 export default function ProposeTradeScreen() {
@@ -13,7 +13,7 @@ export default function ProposeTradeScreen() {
   const router = useRouter();
 
   const [recipientProfile, setRecipientProfile] = useState<UserProfile | null>(null);
-  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export default function ProposeTradeScreen() {
           const profile = await getUserProfile(recipientId);
           setRecipientProfile(profile);
           if (profile?.skillsToTeach && profile.skillsToTeach.length > 0) {
-            setSelectedSkill(profile.skillsToTeach[0]);
+            setSelectedSkillName(profile.skillsToTeach[0].skillName);
           }
         } catch (error) {
           console.error("Failed to fetch recipient profile:", error);
@@ -36,12 +36,33 @@ export default function ProposeTradeScreen() {
   }, [recipientId]);
 
   const handleSendProposal = async () => {
-    if (!currentUser || !recipientId || !selectedSkill) {
+    if (!currentUser || !recipientId || !selectedSkillName || !recipientProfile) {
       Alert.alert("Erro", "Não foi possível enviar a proposta. Tente novamente.");
       return;
     }
+
+    const selectedSkill = recipientProfile.skillsToTeach.find(
+      (s) => s.skillName === selectedSkillName
+    );
+
+    if (!selectedSkill) {
+      Alert.alert("Erro", "Habilidade selecionada não é válida.");
+      return;
+    }
+
+    const proposedDuration = 60; // Hardcoded for now, can be a form field later
+    const costInMinutes = proposedDuration * selectedSkill.multiplier;
+
+    const proposalData = {
+      proposerId: currentUser.uid,
+      recipientId: recipientId,
+      skillName: selectedSkill.skillName,
+      proposedDuration,
+      costInMinutes,
+    };
+
     try {
-      await createProposal(currentUser.uid, recipientId, selectedSkill);
+      await createProposal(proposalData);
       Alert.alert("Sucesso", "Sua proposta foi enviada!");
       router.back();
     } catch (error) {
@@ -66,16 +87,16 @@ export default function ProposeTradeScreen() {
       <Text style={styles.label}>Qual habilidade você gostaria de aprender?</Text>
       <View style={styles.pickerContainer}>
         <Picker
-          selectedValue={selectedSkill}
-          onValueChange={(itemValue) => setSelectedSkill(itemValue)}
+          selectedValue={selectedSkillName}
+          onValueChange={(itemValue) => setSelectedSkillName(itemValue)}
         >
           {recipientProfile.skillsToTeach.map(skill => (
-            <Picker.Item key={skill} label={skill} value={skill} />
+            <Picker.Item key={skill.skillName} label={`${skill.skillName} (Custo: ${60 * skill.multiplier} min)`} value={skill.skillName} />
           ))}
         </Picker>
       </View>
 
-      <Button title="Enviar Proposta" onPress={handleSendProposal} disabled={!selectedSkill} />
+      <Button title="Enviar Proposta" onPress={handleSendProposal} disabled={!selectedSkillName} />
     </View>
   );
 }

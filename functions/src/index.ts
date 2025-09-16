@@ -4,9 +4,6 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 const db = admin.firestore();
 
-// Assumes a fixed duration of 1 hour (60 minutes) for each trade
-const TRADE_DURATION_MINUTES = 60;
-
 export const onProposalCompleted = functions.firestore
   .document("proposals/{proposalId}")
   .onUpdate(async (change, context) => {
@@ -17,6 +14,15 @@ export const onProposalCompleted = functions.firestore
     if (before.status !== "completed" && after.status === "completed") {
       const proposerId = after.proposerId; // The learner
       const recipientId = after.recipientId; // The teacher
+      const costInMinutes = after.costInMinutes; // Get cost from the proposal
+
+      // Validate costInMinutes
+      if (!costInMinutes || typeof costInMinutes !== 'number' || costInMinutes <= 0) {
+        functions.logger.error(
+          `Invalid costInMinutes (${costInMinutes}) for proposal: ${context.params.proposalId}`
+        );
+        return;
+      }
 
       const proposerRef = db.collection("users").doc(proposerId);
       const recipientRef = db.collection("users").doc(recipientId);
@@ -35,9 +41,9 @@ export const onProposalCompleted = functions.firestore
           const recipientData = recipientDoc.data();
 
           const newProposerBalance =
-                (proposerData?.timeBalance || 0) - TRADE_DURATION_MINUTES;
+                (proposerData?.timeBalance || 0) - costInMinutes;
           const newRecipientBalance =
-                (recipientData?.timeBalance || 0) + TRADE_DURATION_MINUTES;
+                (recipientData?.timeBalance || 0) + costInMinutes;
 
           // Ensure proposer has enough balance
           if (newProposerBalance < 0) {

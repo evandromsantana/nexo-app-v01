@@ -1,5 +1,10 @@
 import { Timestamp } from 'firebase/firestore';
 
+export interface TaughtSkill {
+  skillName: string;
+  multiplier: number;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -7,7 +12,7 @@ export interface UserProfile {
   photoUrl: string | null;
   bio: string;
   timeBalance: number;
-  skillsToTeach: string[];
+  skillsToTeach: TaughtSkill[];
   skillsToLearn: string[];
   location: {
     geohash: string;

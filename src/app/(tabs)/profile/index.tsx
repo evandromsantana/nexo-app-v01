@@ -1,5 +1,5 @@
-import { Link } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { Link, useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -20,22 +20,24 @@ export default function ProfileScreen() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      const fetchProfile = async () => {
-        try {
-          setIsLoading(true);
-          const profile = await getUserProfile(user.uid);
-          setUserProfile(profile);
-        } catch (error) {
-          console.error("Failed to fetch user profile:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchProfile();
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        const fetchProfile = async () => {
+          try {
+            // No need to set loading to true here as it might cause a flicker
+            const profile = await getUserProfile(user.uid);
+            setUserProfile(profile);
+          } catch (error) {
+            console.error("Failed to fetch user profile:", error);
+          } finally {
+            setIsLoading(false); // Set loading to false after the first fetch
+          }
+        };
+        fetchProfile();
+      }
+    }, [user])
+  );
 
   if (isLoading) {
     return (
@@ -89,8 +91,11 @@ export default function ProfileScreen() {
         <View style={styles.infoBox}>
           <Text style={styles.infoTitle}>Habilidades para ensinar</Text>
           <Text style={styles.infoContent}>
-            {userProfile?.skillsToTeach?.join(", ") ||
-              "Nenhuma habilidade definida."}
+            {userProfile?.skillsToTeach && userProfile.skillsToTeach.length > 0
+              ? userProfile.skillsToTeach
+                  .map((s) => `${s.skillName} (x${s.multiplier})`)
+                  .join("\n")
+              : "Nenhuma habilidade definida."}
           </Text>
         </View>
 

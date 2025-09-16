@@ -69,14 +69,12 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
   await updateDoc(userRef, data);
 };
 
-export const createProposal = async (proposerId: string, recipientId: string, skillRequested: string) => {
+export const createProposal = async (proposalData: Omit<Proposal, 'createdAt' | 'updatedAt'>) => {
   const proposalsCol = collection(db, 'proposals');
 
   const newProposal = {
-    proposerId,
-    recipientId,
-    skillRequested,
-    status: 'pending',
+    ...proposalData,
+    status: 'pending' as const,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };

@@ -47,7 +47,7 @@ export default function UserDetailScreen() {
       
       <View style={styles.skillsContainer}>
         <Text style={styles.skillsTitle}>Habilidades para Ensinar:</Text>
-        {userProfile.skillsToTeach.map(skill => <Text key={skill} style={styles.skill}>- {skill}</Text>)}
+        {userProfile.skillsToTeach.map(skill => <Text key={skill.skillName} style={styles.skill}>- {skill.skillName} (x{skill.multiplier})</Text>)}
       </View>
 
       <View style={styles.skillsContainer}>

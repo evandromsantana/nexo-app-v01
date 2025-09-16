@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,68 +8,35 @@ import {
   Alert,
   ScrollView,
   Image,
-  ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 
-import { useAuth } from '../../../hooks/useAuth';
-import { UserProfile, TaughtSkill } from '../../../types/user';
-import { getUserProfile, updateUserProfile } from '../../../api/firestore';
-import { uploadImage } from '../../../api/cloudinary';
-import { COLORS } from '../../../constants/colors';
-
-// Use a local interface for the form state to handle the multiplier as a string
-interface EditableTaughtSkill {
-  skillName: string;
-  multiplier: string;
-}
+import { useAuth } from '../../contexts/AuthContext';
+import { TaughtSkill } from '../../types/user';
+import { updateUserProfile } from '../../api/firestore';
+import { uploadImage } from '../../api/cloudinary'; // Assuming you have a similar function
+import { Colors } from '../../constants/colors'; // Assuming color constants exist
 
 const EditProfileScreen = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userProfile, reloadUserProfile } = useAuth();
 
-  // State for the form data
-  const [displayName, setDisplayName] = useState('');
-  const [bio, setBio] = useState('');
-  const [skillsToTeach, setSkillsToTeach] = useState<EditableTaughtSkill[]>([]);
-  const [skillsToLearn, setSkillsToLearn] = useState('');
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  
-  // State for loading and submitting
-  const [isLoading, setIsLoading] = useState(true); // For initial profile load
-  const [isSubmitting, setIsSubmitting] = useState(false); // For submission process
-
-  // Fetch profile data on component mount
-  useEffect(() => {
-    if (user) {
-      const fetchProfile = async () => {
-        setIsLoading(true);
-        try {
-          const profile = await getUserProfile(user.uid);
-          if (profile) {
-            setDisplayName(profile.displayName || '');
-            setBio(profile.bio || '');
-            // Convert the numeric multiplier to a string for the form state
-            setSkillsToTeach(
-              (profile.skillsToTeach || []).map(skill => ({...skill, multiplier: String(skill.multiplier)}))
-            );
-            setSkillsToLearn(profile.skillsToLearn?.join(', ') || '');
-            setImageUri(profile.photoUrl || null);
-          }
-        } catch (error) {
-          console.error("Failed to fetch profile for editing:", error);
-          Alert.alert("Erro", "Não foi possível carregar seu perfil para edição.");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchProfile();
-    }
-  }, [user]);
+  const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
+  const [bio, setBio] = useState(userProfile?.bio || '');
+  const [skillsToTeach, setSkillsToTeach] = useState<TaughtSkill[]>(
+    userProfile?.skillsToTeach && userProfile.skillsToTeach.length > 0
+      ? userProfile.skillsToTeach
+      : []
+  );
+  const [skillsToLearn, setSkillsToLearn] = useState(
+    userProfile?.skillsToLearn?.join(', ') || ''
+  );
+  const [imageUri, setImageUri] = useState(userProfile?.photoUrl || null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAddSkill = () => {
-    setSkillsToTeach([...skillsToTeach, { skillName: '', multiplier: '1.0' }]);
+    setSkillsToTeach([...skillsToTeach, { skillName: '', multiplier: 1.0 }]);
   };
 
   const handleRemoveSkill = (index: number) => {
@@ -85,9 +52,8 @@ const EditProfileScreen = () => {
   ) => {
     const updatedSkills = [...skillsToTeach];
     if (field === 'multiplier') {
-      // Allow only valid characters for a float number
-      const sanitizedValue = value.replace(/[^0-9.,]/g, '').replace(',', '.');
-      updatedSkills[index][field] = sanitizedValue;
+      const parsedValue = parseFloat(value.replace(',', '.'));
+      updatedSkills[index][field] = isNaN(parsedValue) ? 1.0 : parsedValue;
     } else {
       updatedSkills[index][field] = value;
     }
@@ -113,46 +79,50 @@ const EditProfileScreen = () => {
       return;
     }
 
-    const skillsToSave: TaughtSkill[] = [];
-    // Validate and convert skills back to the correct numeric type before saving
     for (const taughtSkill of skillsToTeach) {
       if (!taughtSkill.skillName.trim()) {
         Alert.alert('Erro', 'O nome de uma das habilidades está vazio.');
         return;
       }
-      const finalMultiplier = parseFloat(taughtSkill.multiplier);
-      if (isNaN(finalMultiplier) || finalMultiplier <= 0) {
+      if (taughtSkill.multiplier <= 0) {
         Alert.alert(
           'Erro',
-          `O multiplicador "${taughtSkill.multiplier}" para "${taughtSkill.skillName}" é inválido. Deve ser um número maior que zero.`
+          `O multiplicador para "${taughtSkill.skillName}" é inválido. Deve ser um número maior que zero.`
         );
         return;
       }
-      skillsToSave.push({ skillName: taughtSkill.skillName.trim(), multiplier: finalMultiplier });
     }
 
-    setIsSubmitting(true);
+    setIsLoading(true);
     try {
-      let photoUrl: string | null = imageUri;
+      let photoUrl: string | null = userProfile?.photoUrl || null;
 
-      if (imageUri && imageUri.startsWith('file://')) {
+      if (imageUri && imageUri !== userProfile?.photoUrl) {
         photoUrl = await uploadImage(imageUri);
       }
+
+      const skillsToTeachArray = skillsToTeach
+        .filter((s) => s.skillName.trim() !== '')
+        .map((s) => ({
+          skillName: s.skillName.trim(),
+          multiplier: s.multiplier || 1.0,
+        }));
 
       const skillsToLearnArray = skillsToLearn
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const updatedData: Partial<UserProfile> = {
+      const updatedData = {
         displayName,
         bio,
-        skillsToTeach: skillsToSave, // Save the correctly typed array
+        skillsToTeach: skillsToTeachArray,
         skillsToLearn: skillsToLearnArray,
         photoUrl,
       };
 
       await updateUserProfile(user.uid, updatedData);
+      await reloadUserProfile();
 
       Alert.alert('Sucesso', 'Perfil atualizado!');
       router.back();
@@ -160,17 +130,9 @@ const EditProfileScreen = () => {
       console.error('Erro ao atualizar o perfil:', error);
       Alert.alert('Erro', 'Não foi possível atualizar o seu perfil.');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
 
   return (
     <ScrollView
@@ -211,7 +173,7 @@ const EditProfileScreen = () => {
           <TextInput
             style={[styles.input, styles.rateInput]}
             placeholder="1.0"
-            value={item.multiplier} // Value is now a string
+            value={String(item.multiplier)}
             onChangeText={(text) =>
               handleSkillChange(index, 'multiplier', text)
             }
@@ -237,11 +199,11 @@ const EditProfileScreen = () => {
       />
 
       <TouchableOpacity
-        style={[styles.button, isSubmitting ? styles.buttonDisabled : {}]}
+        style={[styles.button, isLoading ? styles.buttonDisabled : {}]}
         onPress={handleUpdate}
-        disabled={isSubmitting}>
+        disabled={isLoading}>
         <Text style={styles.buttonText}>
-          {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+          {isLoading ? 'Salvando...' : 'Salvar Alterações'}
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -249,21 +211,16 @@ const EditProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: COLORS.background || '#f5f5f5',
+    backgroundColor: '#f5f5f5',
   },
   imagePicker: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: COLORS.grayLight || '#e0e0e0',
+    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -275,13 +232,13 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   imagePickerText: {
-    color: COLORS.grayDark || '#757575',
+    color: '#757575',
     textAlign: 'center',
   },
   label: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.primary || '#333',
+    color: '#333',
     marginBottom: 5,
     marginTop: 15,
   },
@@ -316,30 +273,30 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   removeButtonText: {
-    color: COLORS.accent || 'red',
+    color: 'red',
     fontSize: 16,
     fontWeight: 'bold',
   },
   addButton: {
-    backgroundColor: COLORS.grayLight || '#e0e0e0',
+    backgroundColor: '#e0e0e0',
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 5,
   },
   addButtonText: {
-    color: COLORS.primary || '#333',
+    color: '#333',
     fontWeight: 'bold',
   },
   button: {
-    backgroundColor: COLORS.primary || '#007bff',
+    backgroundColor: '#007bff',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 30,
   },
   buttonDisabled: {
-    backgroundColor: COLORS.grayDark || '#a9a9a9',
+    backgroundColor: '#a9a9a9',
   },
   buttonText: {
     color: '#fff',
