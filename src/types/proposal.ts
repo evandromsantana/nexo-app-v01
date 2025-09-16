@@ -10,3 +10,5 @@ export interface Proposal {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+export type ProposalWithId = Proposal & { id: string };

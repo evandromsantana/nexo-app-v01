@@ -15,7 +15,7 @@ import {
 } from "../../api/firestore";
 import { COLORS } from "../../constants/colors";
 import { useAuth } from "../../hooks/useAuth";
-import { Proposal } from "../../types/proposal";
+import { Proposal, ProposalWithId } from "../../types/proposal";
 import { UserProfile } from "../../types/user";
 
 // Componente de cartão de proposta
@@ -26,7 +26,7 @@ const ProposalCard = ({
   userProfiles,
   currentUserId,
 }: {
-  proposal: Proposal;
+  proposal: ProposalWithId;
   type: "received" | "sent";
   onUpdate: (
     proposalId: string,
@@ -55,7 +55,7 @@ const ProposalCard = ({
 
       <View style={styles.badge}>
         <Text style={styles.badgeText}>
-          Habilidade: {proposal.skillRequested}
+          Habilidade: {proposal.skillName}
         </Text>
       </View>
 
@@ -92,8 +92,8 @@ const ProposalCard = ({
 export default function ProposalsScreen() {
   const { user } = useAuth();
   const [proposals, setProposals] = useState<{
-    received: Proposal[];
-    sent: Proposal[];
+    received: ProposalWithId[];
+    sent: ProposalWithId[];
   }>({ received: [], sent: [] });
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>(
     {}
