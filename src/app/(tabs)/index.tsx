@@ -18,6 +18,7 @@ import { COLORS } from "../../constants/colors";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfile } from "../../types/user";
 import { Link } from "expo-router";
+import UserInfoCard from "../../components/map/UserInfoCard";
 
 // --- TYPE DEFINITIONS ---
 interface PointFeature {
@@ -36,39 +37,6 @@ interface ClusterFeature {
   geometry: { type: "Point"; coordinates: [number, number] };
 }
 type ClusterItem = PointFeature | ClusterFeature;
-
-// --- USER INFO CARD COMPONENT ---
-const UserInfoCard = ({ user, onClose }: { user: UserProfile; onClose: () => void }) => {
-  return (
-    <View style={styles.cardContainer}>
-      <TouchableOpacity style={styles.cardCloseButton} onPress={onClose}>
-        <Text style={styles.cardCloseButtonText}>X</Text>
-      </TouchableOpacity>
-      <View style={styles.cardHeader}>
-        <Image 
-          source={user.photoUrl ? { uri: user.photoUrl } : require("../../assets/default-avatar.png")} 
-          style={styles.cardAvatar} 
-        />
-        <Text style={styles.cardName}>{user.displayName}</Text>
-      </View>
-      <ScrollView style={styles.cardBody}>
-        <Text style={styles.cardSectionTitle}>Habilidades que ensina:</Text>
-        {(user.skillsToTeach || []).map(skill => (
-          <Text key={skill.skillName} style={styles.cardSkill}>- {skill.skillName} (x{skill.multiplier})</Text>
-        ))}
-        <Text style={styles.cardSectionTitle}>Habilidades que quer aprender:</Text>
-        {(user.skillsToLearn || []).map(skill => (
-          <Text key={skill} style={styles.cardSkill}>- {skill}</Text>
-        ))}
-      </ScrollView>
-      <Link href={`/user/${user.uid}`} asChild>
-        <TouchableOpacity style={styles.cardProfileButton}>
-          <Text style={styles.cardProfileButtonText}>Ver Perfil Completo</Text>
-        </TouchableOpacity>
-      </Link>
-    </View>
-  );
-};
 
 // --- HOME SCREEN COMPONENT ---
 export default function HomeScreen() {
@@ -283,55 +251,4 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   searchInput: { width: "100%", fontSize: 16 },
-  // --- CARD STYLES ---
-  cardContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 10,
-    maxHeight: '40%',
-  },
-  cardCloseButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: COLORS.grayLight,
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  cardCloseButtonText: { color: COLORS.grayDark, fontWeight: 'bold', fontSize: 16 },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  cardAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 15,
-  },
-  cardName: { fontSize: 20, fontWeight: 'bold', color: COLORS.primary },
-  cardBody: { flex: 1 },
-  cardSectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.grayDark, marginTop: 10, marginBottom: 5 },
-  cardSkill: { fontSize: 14, color: COLORS.grayDark, marginLeft: 10 },
-  cardProfileButton: {
-    backgroundColor: COLORS.primary,
-    padding: 12,
-    borderRadius: 15,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  cardProfileButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 });
