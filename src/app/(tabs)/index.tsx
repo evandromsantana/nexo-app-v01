@@ -8,6 +8,8 @@ import {
   Text,
   TextInput,
   View,
+  TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import Supercluster from "supercluster";
@@ -15,7 +17,9 @@ import { getUsers, updateUserLocation } from "../../api/firestore";
 import { COLORS } from "../../constants/colors";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfile } from "../../types/user";
+import { Link } from "expo-router";
 
+// --- TYPE DEFINITIONS ---
 interface PointFeature {
   type: "Feature";
   properties: { user: UserProfile };
@@ -31,15 +35,49 @@ interface ClusterFeature {
   };
   geometry: { type: "Point"; coordinates: [number, number] };
 }
-
 type ClusterItem = PointFeature | ClusterFeature;
 
+// --- USER INFO CARD COMPONENT ---
+const UserInfoCard = ({ user, onClose }: { user: UserProfile; onClose: () => void }) => {
+  return (
+    <View style={styles.cardContainer}>
+      <TouchableOpacity style={styles.cardCloseButton} onPress={onClose}>
+        <Text style={styles.cardCloseButtonText}>X</Text>
+      </TouchableOpacity>
+      <View style={styles.cardHeader}>
+        <Image 
+          source={user.photoUrl ? { uri: user.photoUrl } : require("../../assets/default-avatar.png")} 
+          style={styles.cardAvatar} 
+        />
+        <Text style={styles.cardName}>{user.displayName}</Text>
+      </View>
+      <ScrollView style={styles.cardBody}>
+        <Text style={styles.cardSectionTitle}>Habilidades que ensina:</Text>
+        {(user.skillsToTeach || []).map(skill => (
+          <Text key={skill.skillName} style={styles.cardSkill}>- {skill.skillName} (x{skill.multiplier})</Text>
+        ))}
+        <Text style={styles.cardSectionTitle}>Habilidades que quer aprender:</Text>
+        {(user.skillsToLearn || []).map(skill => (
+          <Text key={skill} style={styles.cardSkill}>- {skill}</Text>
+        ))}
+      </ScrollView>
+      <Link href={`/user/${user.uid}`} asChild>
+        <TouchableOpacity style={styles.cardProfileButton}>
+          <Text style={styles.cardProfileButtonText}>Ver Perfil Completo</Text>
+        </TouchableOpacity>
+      </Link>
+    </View>
+  );
+};
+
+// --- HOME SCREEN COMPONENT ---
 export default function HomeScreen() {
   const { user } = useAuth();
   const [region, setRegion] = useState<Region | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
   // Get user location
   useEffect(() => {
@@ -93,16 +131,10 @@ export default function HomeScreen() {
         properties: { user: u },
         geometry: {
           type: "Point",
-          coordinates: [u.location!.longitude, u.location!.latitude] as [
-            number,
-            number
-          ],
+          coordinates: [u.location!.longitude, u.location!.latitude] as [number, number],
         },
       }));
-    const index = new Supercluster({
-      radius: 60,
-      maxZoom: 20,
-    });
+    const index = new Supercluster({ radius: 60, maxZoom: 20 });
     index.load(points);
     return index;
   }, [filteredUsers]);
@@ -124,30 +156,24 @@ export default function HomeScreen() {
 
   const renderMarker = useCallback((feature: ClusterItem) => {
     if ("cluster" in feature.properties) {
-      // Cluster marker
       return (
         <Marker
           key={`cluster-${feature.properties.cluster_id}`}
           coordinate={{
             latitude: feature.geometry.coordinates[1],
             longitude: feature.geometry.coordinates[0],
-          }}>
+          }}
+          onPress={(e) => e.stopPropagation()} // Prevent map press on cluster press
+        >
           <View style={styles.cluster}>
-            <Text style={styles.clusterText}>
-              {feature.properties.point_count}
-            </Text>
+            <Text style={styles.clusterText}>{feature.properties.point_count}</Text>
           </View>
         </Marker>
       );
     } else {
-      // Single user
       const { user } = feature.properties;
       const photo = user.photoUrl ? { uri: user.photoUrl } : undefined;
-      const initials = user.displayName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase();
+      const initials = user.displayName.split(" ").map((n) => n[0]).join("").toUpperCase();
       return (
         <Marker
           key={user.uid}
@@ -155,7 +181,11 @@ export default function HomeScreen() {
             latitude: feature.geometry.coordinates[1],
             longitude: feature.geometry.coordinates[0],
           }}
-          title={user.displayName}>
+          onPress={(e) => {
+            e.stopPropagation(); // Prevent map press from firing
+            setSelectedUser(user);
+          }}
+        >
           <View style={styles.avatarMarker}>
             {photo ? (
               <Image source={photo} style={styles.avatarImage} />
@@ -183,7 +213,9 @@ export default function HomeScreen() {
         style={styles.map}
         provider={PROVIDER_GOOGLE}
         region={region}
-        onRegionChangeComplete={setRegion}>
+        onRegionChangeComplete={setRegion}
+        onPress={() => setSelectedUser(null)} // Deselect user on map press
+      >
         {clusters.map(renderMarker)}
       </MapView>
 
@@ -195,6 +227,8 @@ export default function HomeScreen() {
           style={styles.searchInput}
         />
       </View>
+
+      {selectedUser && <UserInfoCard user={selectedUser} onClose={() => setSelectedUser(null)} />}
     </View>
   );
 }
@@ -248,8 +282,56 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  searchInput: {
-    width: "100%",
-    fontSize: 16,
+  searchInput: { width: "100%", fontSize: 16 },
+  // --- CARD STYLES ---
+  cardContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 15,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
+    maxHeight: '40%',
   },
+  cardCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: COLORS.grayLight,
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  cardCloseButtonText: { color: COLORS.grayDark, fontWeight: 'bold', fontSize: 16 },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  cardAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 15,
+  },
+  cardName: { fontSize: 20, fontWeight: 'bold', color: COLORS.primary },
+  cardBody: { flex: 1 },
+  cardSectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.grayDark, marginTop: 10, marginBottom: 5 },
+  cardSkill: { fontSize: 14, color: COLORS.grayDark, marginLeft: 10 },
+  cardProfileButton: {
+    backgroundColor: COLORS.primary,
+    padding: 12,
+    borderRadius: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  cardProfileButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 });
