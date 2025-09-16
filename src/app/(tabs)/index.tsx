@@ -78,7 +78,7 @@ export default function HomeScreen() {
       (u) =>
         u.displayName.toLowerCase().includes(s) ||
         (u.skillsToTeach || []).some((skill) =>
-          skill.toLowerCase().includes(s)
+          skill.skillName.toLowerCase().includes(s)
         ) ||
         (u.skillsToLearn || []).some((skill) => skill.toLowerCase().includes(s))
     );
