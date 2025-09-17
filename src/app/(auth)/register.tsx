@@ -1,4 +1,4 @@
-import LogoNexo4Pro from "@/components/Logo";
+import LogoNexo4Pro from "../../components/app/Logo";
 import {
   COLORS,
   FONT_SIZE,

@@ -1,6 +1,6 @@
 // src/app/(auth)/welcome.tsx
 
-import LogoNexo4Pro from "@/components/Logo";
+import LogoNexo4Pro from "../../components/app/Logo";
 import { COLORS } from "@/constants";
 import { Link } from "expo-router";
 import React from "react";

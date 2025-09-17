@@ -16,7 +16,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { TaughtSkill } from '../../types/user';
 import { updateUserProfile } from '../../api/firestore';
 import { uploadImage } from '../../api/cloudinary'; // Assuming you have a similar function
-import { Colors } from '../../constants/colors'; // Assuming color constants exist
+import { COLORS } from '../../constants/Colors'; // Assuming color constants exist
 
 const EditProfileScreen = () => {
   const router = useRouter();
