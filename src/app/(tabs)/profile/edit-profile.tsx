@@ -18,6 +18,10 @@ import { uploadImage } from "../../../api/cloudinary";
 import { getUserProfile, updateUserProfile } from "../../../api/firestore";
 import { useAuth } from "../../../hooks/useAuth";
 import { TaughtSkill, UserProfile } from "../../../types/user";
+import ProfileImagePicker from "../../../components/app/ProfileImagePicker";
+import ProfileInputField from "../../../components/app/ProfileInputField";
+import SkillsToTeachEditor from "../../../components/app/SkillsToTeachEditor";
+import ProfileSaveButton from "../../../components/app/ProfileSaveButton";
 
 // Use a local interface for the form state to handle the multiplier as a string
 interface EditableTaughtSkill {
@@ -185,74 +189,27 @@ const EditProfileScreen = () => {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: 50 }}>
-      <TouchableOpacity onPress={handlePickImage} style={styles.imagePicker}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.profileImage} />
-        ) : (
-          <Text style={styles.imagePickerText}>Escolher foto</Text>
-        )}
-      </TouchableOpacity>
+      <ProfileImagePicker imageUri={imageUri} onPickImage={handlePickImage} />
 
-      <Text style={styles.label}>Nome</Text>
-      <TextInput
-        style={styles.input}
-        value={displayName}
-        onChangeText={setDisplayName}
+      <ProfileInputField label="Nome" value={displayName} onChangeText={setDisplayName} />
+
+      <ProfileInputField label="Sobre mim" value={bio} onChangeText={setBio} multiline textArea />
+
+      <SkillsToTeachEditor
+        skillsToTeach={skillsToTeach}
+        onAddSkill={handleAddSkill}
+        onRemoveSkill={handleRemoveSkill}
+        onSkillChange={handleSkillChange}
       />
 
-      <Text style={styles.label}>Sobre mim</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        value={bio}
-        onChangeText={setBio}
-        multiline
-      />
-
-      <Text style={styles.label}>Habilidades que ensino</Text>
-      {skillsToTeach.map((item, index) => (
-        <View key={index} style={styles.skillRow}>
-          <TextInput
-            style={[styles.input, styles.skillInput]}
-            placeholder="Ex: Aula de violão"
-            value={item.skillName}
-            onChangeText={(text) => handleSkillChange(index, "skillName", text)}
-          />
-          <TextInput
-            style={[styles.input, styles.rateInput]}
-            placeholder="1.0"
-            value={item.multiplier} // Value is now a string
-            onChangeText={(text) =>
-              handleSkillChange(index, "multiplier", text)
-            }
-            keyboardType="numeric"
-          />
-          <TouchableOpacity
-            onPress={() => handleRemoveSkill(index)}
-            style={styles.removeButton}>
-            <Text style={styles.removeButtonText}>X</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
-      <TouchableOpacity onPress={handleAddSkill} style={styles.addButton}>
-        <Text style={styles.addButtonText}>+ Adicionar Habilidade</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.label}>Habilidades que quero aprender</Text>
-      <TextInput
-        style={styles.input}
+      <ProfileInputField
+        label="Habilidades que quero aprender"
         placeholder="Separadas por vírgula"
         value={skillsToLearn}
         onChangeText={setSkillsToLearn}
       />
 
-      <TouchableOpacity
-        style={[styles.button, isSubmitting ? styles.buttonDisabled : {}]}
-        onPress={handleUpdate}
-        disabled={isSubmitting}>
-        <Text style={styles.buttonText}>
-          {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-        </Text>
-      </TouchableOpacity>
+      <ProfileSaveButton isSubmitting={isSubmitting} onPress={handleUpdate} />
     </ScrollView>
   );
 };
@@ -268,93 +225,10 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: COLORS.background || "#f5f5f5",
   },
-  imagePicker: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.grayLight || "#e0e0e0",
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    marginBottom: 20,
-    overflow: "hidden",
-  },
-  profileImage: {
-    width: "100%",
-    height: "100%",
-  },
-  imagePickerText: {
-    color: COLORS.grayDark || "#757575",
-    textAlign: "center",
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: COLORS.primary || "#333",
-    marginBottom: 5,
-    marginTop: 15,
-  },
-  input: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 8,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: "top",
-  },
-  skillRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  skillInput: {
-    flex: 1,
-    marginRight: 10,
-  },
-  rateInput: {
-    width: 70,
-    textAlign: "center",
-  },
-  removeButton: {
-    padding: 10,
-    marginLeft: 5,
-  },
-  removeButtonText: {
-    color: COLORS.accent || "red",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  addButton: {
-    backgroundColor: COLORS.grayLight || "#e0e0e0",
-    padding: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 5,
-  },
-  addButtonText: {
-    color: COLORS.primary || "#333",
-    fontWeight: "bold",
-  },
-  button: {
-    backgroundColor: COLORS.primary || "#007bff",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 30,
-  },
-  buttonDisabled: {
-    backgroundColor: COLORS.grayDark || "#a9a9a9",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  
+  
+  
+  
 });
 
 export default EditProfileScreen;

@@ -31,6 +31,7 @@ const SkillTag = ({ text }: { text: string }) => (
 
 interface UserInfoCardProps {
   user: UserProfile;
+  onClose: () => void;
 }
 
 const UserInfoCard = ({ user }: UserInfoCardProps) => {

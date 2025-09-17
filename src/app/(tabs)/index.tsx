@@ -1,39 +1,17 @@
-import { COLORS } from "@/constants";
 import * as Location from "expo-location";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import React, { useEffect, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { Region } from "react-native-maps";
 import Supercluster from "supercluster";
+
 import { getUsers, updateUserLocation } from "../../api/firestore";
+import MapLoadingState from "../../components/app/MapLoadingState";
+import MapSearchInput from "../../components/app/MapSearchInput";
 import UserInfoCard from "../../components/map/UserInfoCard";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfile } from "../../types/user";
 
-// --- TYPE DEFINITIONS ---
-interface PointFeature {
-  type: "Feature";
-  properties: { user: UserProfile };
-  geometry: { type: "Point"; coordinates: [number, number] };
-}
-
-interface ClusterFeature {
-  type: "Feature";
-  properties: {
-    cluster: true;
-    cluster_id: number;
-    point_count: number;
-  };
-  geometry: { type: "Point"; coordinates: [number, number] };
-}
-type ClusterItem = PointFeature | ClusterFeature;
+import MapComponent, { ClusterItem, PointFeature } from "../../components/app/MapComponent";
 
 // --- HOME SCREEN COMPONENT ---
 export default function HomeScreen() {
@@ -122,84 +100,21 @@ export default function HomeScreen() {
     ) as ClusterItem[];
   }, [clusterIndex, region]);
 
-  const renderMarker = useCallback((feature: ClusterItem) => {
-    if ("cluster" in feature.properties) {
-      return (
-        <Marker
-          key={`cluster-${feature.properties.cluster_id}`}
-          coordinate={{
-            latitude: feature.geometry.coordinates[1],
-            longitude: feature.geometry.coordinates[0],
-          }}
-          onPress={(e) => e.stopPropagation()} // Prevent map press on cluster press
-        >
-          <View style={styles.cluster}>
-            <Text style={styles.clusterText}>
-              {feature.properties.point_count}
-            </Text>
-          </View>
-        </Marker>
-      );
-    } else {
-      const { user } = feature.properties;
-      const photo = user.photoUrl ? { uri: user.photoUrl } : undefined;
-      const initials = user.displayName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase();
-      return (
-        <Marker
-          key={user.uid}
-          coordinate={{
-            latitude: feature.geometry.coordinates[1],
-            longitude: feature.geometry.coordinates[0],
-          }}
-          onPress={(e) => {
-            e.stopPropagation(); // Prevent map press from firing
-            setSelectedUser(user);
-          }}>
-          <View style={styles.avatarMarker}>
-            {photo ? (
-              <Image source={photo} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.avatarInitials}>{initials}</Text>
-            )}
-          </View>
-        </Marker>
-      );
-    }
-  }, []);
-
   if (loading || !region) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text>Loading map...</Text>
-      </View>
-    );
+    return <MapLoadingState />;
   }
 
   return (
     <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
+      <MapComponent
         region={region}
-        onRegionChangeComplete={setRegion}
-        onPress={() => setSelectedUser(null)} // Deselect user on map press
-      >
-        {clusters.map(renderMarker)}
-      </MapView>
+        setRegion={setRegion}
+        clusters={clusters}
+        onMarkerPress={setSelectedUser}
+        onMapPress={() => setSelectedUser(null)}
+      />
 
-      <View style={styles.searchContainer}>
-        <TextInput
-          placeholder="Buscar usuário ou habilidade..."
-          value={search}
-          onChangeText={setSearch}
-          style={styles.searchInput}
-        />
-      </View>
+      <MapSearchInput search={search} setSearch={setSearch} />
 
       {selectedUser && (
         <UserInfoCard
@@ -211,54 +126,6 @@ export default function HomeScreen() {
   );
 }
 
-const { width } = Dimensions.get("window");
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.background,
-  },
-  map: { ...StyleSheet.absoluteFillObject },
-  avatarMarker: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 2,
-    borderColor: COLORS.white,
-    backgroundColor: COLORS.grayLight,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarImage: { width: "100%", height: "100%" },
-  avatarInitials: { color: COLORS.white, fontWeight: "bold" },
-  cluster: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.accent,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  clusterText: { color: COLORS.white, fontWeight: "bold" },
-  searchContainer: {
-    position: "absolute",
-    top: 50,
-    alignSelf: "center",
-    width: width * 0.9,
-    backgroundColor: COLORS.white,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  searchInput: { width: "100%", fontSize: 16 },
 });
