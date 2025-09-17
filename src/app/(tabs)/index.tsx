@@ -1,3 +1,4 @@
+import { COLORS } from "@/constants";
 import * as Location from "expo-location";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -8,17 +9,13 @@ import {
   Text,
   TextInput,
   View,
-  TouchableOpacity,
-  ScrollView,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import Supercluster from "supercluster";
 import { getUsers, updateUserLocation } from "../../api/firestore";
-import { COLORS } from "../../constants/colors";
+import UserInfoCard from "../../components/map/UserInfoCard";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfile } from "../../types/user";
-import { Link } from "expo-router";
-import UserInfoCard from "../../components/map/UserInfoCard";
 
 // --- TYPE DEFINITIONS ---
 interface PointFeature {
@@ -99,7 +96,10 @@ export default function HomeScreen() {
         properties: { user: u },
         geometry: {
           type: "Point",
-          coordinates: [u.location!.longitude, u.location!.latitude] as [number, number],
+          coordinates: [u.location!.longitude, u.location!.latitude] as [
+            number,
+            number
+          ],
         },
       }));
     const index = new Supercluster({ radius: 60, maxZoom: 20 });
@@ -134,14 +134,20 @@ export default function HomeScreen() {
           onPress={(e) => e.stopPropagation()} // Prevent map press on cluster press
         >
           <View style={styles.cluster}>
-            <Text style={styles.clusterText}>{feature.properties.point_count}</Text>
+            <Text style={styles.clusterText}>
+              {feature.properties.point_count}
+            </Text>
           </View>
         </Marker>
       );
     } else {
       const { user } = feature.properties;
       const photo = user.photoUrl ? { uri: user.photoUrl } : undefined;
-      const initials = user.displayName.split(" ").map((n) => n[0]).join("").toUpperCase();
+      const initials = user.displayName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase();
       return (
         <Marker
           key={user.uid}
@@ -152,8 +158,7 @@ export default function HomeScreen() {
           onPress={(e) => {
             e.stopPropagation(); // Prevent map press from firing
             setSelectedUser(user);
-          }}
-        >
+          }}>
           <View style={styles.avatarMarker}>
             {photo ? (
               <Image source={photo} style={styles.avatarImage} />
@@ -196,7 +201,12 @@ export default function HomeScreen() {
         />
       </View>
 
-      {selectedUser && <UserInfoCard user={selectedUser} onClose={() => setSelectedUser(null)} />}
+      {selectedUser && (
+        <UserInfoCard
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
     </View>
   );
 }

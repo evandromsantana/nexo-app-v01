@@ -1,10 +1,10 @@
 // src/app/(auth)/welcome.tsx
 
 import LogoNexo4Pro from "@/components/Logo";
+import { COLORS } from "@/constants";
 import { Link } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { COLORS } from "../../constants/colors";
 
 // Estrutura do componente como função anônima, conforme 04-CODING-STANDARDS.md
 const WelcomeScreen = () => {

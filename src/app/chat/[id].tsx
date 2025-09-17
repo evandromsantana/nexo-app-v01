@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { GiftedChat, IMessage } from 'react-native-gifted-chat';
-import { useLocalSearchParams } from 'expo-router';
-import { useAuth } from '../../hooks/useAuth';
-import { getMessagesForChat, sendMessage } from '../../api/firestore';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from "@/constants";
+import { useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet } from "react-native";
+import { GiftedChat, IMessage } from "react-native-gifted-chat";
+import { getMessagesForChat, sendMessage } from "../../api/firestore";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function ChatRoomScreen() {
   const { id: chatId } = useLocalSearchParams<{ id: string }>();
@@ -24,28 +24,37 @@ export default function ChatRoomScreen() {
     }
   }, [chatId]);
 
-  const onSend = useCallback((newMessages: IMessage[] = []) => {
-    if (chatId && user) {
-      const text = newMessages[0].text;
-      sendMessage(chatId, user.uid, text);
-    }
-  }, [chatId, user]);
+  const onSend = useCallback(
+    (newMessages: IMessage[] = []) => {
+      if (chatId && user) {
+        const text = newMessages[0].text;
+        sendMessage(chatId, user.uid, text);
+      }
+    },
+    [chatId, user]
+  );
 
   if (isLoading) {
-    return <ActivityIndicator style={styles.centered} size="large" color={COLORS.primary} />;
+    return (
+      <ActivityIndicator
+        style={styles.centered}
+        size="large"
+        color={COLORS.primary}
+      />
+    );
   }
 
   return (
     <GiftedChat
       messages={messages}
-      onSend={messages => onSend(messages)}
+      onSend={(messages) => onSend(messages)}
       user={{
-        _id: user?.uid || '',
+        _id: user?.uid || "",
       }}
     />
   );
 }
 
 const styles = StyleSheet.create({
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

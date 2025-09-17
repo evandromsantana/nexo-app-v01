@@ -1,3 +1,4 @@
+import { COLORS } from "@/constants";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,9 +14,8 @@ import {
   getUserProfile,
   updateProposalStatus,
 } from "../../api/firestore";
-import { COLORS } from "../../constants/colors";
 import { useAuth } from "../../hooks/useAuth";
-import { Proposal, ProposalWithId } from "../../types/proposal";
+import { ProposalWithId } from "../../types/proposal";
 import { UserProfile } from "../../types/user";
 
 // Componente de cartão de proposta
@@ -54,9 +54,7 @@ const ProposalCard = ({
       </Text>
 
       <View style={styles.badge}>
-        <Text style={styles.badgeText}>
-          Habilidade: {proposal.skillName}
-        </Text>
+        <Text style={styles.badgeText}>Habilidade: {proposal.skillName}</Text>
       </View>
 
       <Text style={styles.cardStatus}>Status: {proposal.status}</Text>

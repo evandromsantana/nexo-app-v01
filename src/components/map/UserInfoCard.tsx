@@ -1,3 +1,4 @@
+import { COLORS } from "@/constants";
 import { Feather } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import React, { useState } from "react";
@@ -12,7 +13,6 @@ import {
   UIManager,
   View,
 } from "react-native";
-import { COLORS } from "../../constants/colors";
 import { UserProfile } from "../../types/user";
 
 // Habilitar LayoutAnimation para Android

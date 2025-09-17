@@ -1,19 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Button, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
-import { useAuth } from '../../hooks/useAuth';
-import { getUserProfile, createProposal } from '../../api/firestore';
-import { UserProfile, TaughtSkill } from '../../types/user';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from "@/constants";
+import { Picker } from "@react-native-picker/picker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Button,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { createProposal, getUserProfile } from "../../api/firestore";
+import { useAuth } from "../../hooks/useAuth";
+import { UserProfile } from "../../types/user";
 
 export default function ProposeTradeScreen() {
   const { id: recipientId } = useLocalSearchParams<{ id: string }>();
   const { user: currentUser } = useAuth();
   const router = useRouter();
 
-  const [recipientProfile, setRecipientProfile] = useState<UserProfile | null>(null);
-  const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
+  const [recipientProfile, setRecipientProfile] = useState<UserProfile | null>(
+    null
+  );
+  const [selectedSkillName, setSelectedSkillName] = useState<string | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -36,8 +47,16 @@ export default function ProposeTradeScreen() {
   }, [recipientId]);
 
   const handleSendProposal = async () => {
-    if (!currentUser || !recipientId || !selectedSkillName || !recipientProfile) {
-      Alert.alert("Erro", "Não foi possível enviar a proposta. Tente novamente.");
+    if (
+      !currentUser ||
+      !recipientId ||
+      !selectedSkillName ||
+      !recipientProfile
+    ) {
+      Alert.alert(
+        "Erro",
+        "Não foi possível enviar a proposta. Tente novamente."
+      );
       return;
     }
 
@@ -72,46 +91,76 @@ export default function ProposeTradeScreen() {
   };
 
   if (isLoading) {
-    return <ActivityIndicator style={styles.centered} size="large" color={COLORS.primary} />;
+    return (
+      <ActivityIndicator
+        style={styles.centered}
+        size="large"
+        color={COLORS.primary}
+      />
+    );
   }
 
   if (!recipientProfile) {
-    return <View style={styles.centered}><Text>Usuário não encontrado.</Text></View>;
+    return (
+      <View style={styles.centered}>
+        <Text>Usuário não encontrado.</Text>
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Propor Troca com</Text>
       <Text style={styles.name}>{recipientProfile.displayName}</Text>
-      
-      <Text style={styles.label}>Qual habilidade você gostaria de aprender?</Text>
+
+      <Text style={styles.label}>
+        Qual habilidade você gostaria de aprender?
+      </Text>
       <View style={styles.pickerContainer}>
         <Picker
           selectedValue={selectedSkillName}
-          onValueChange={(itemValue) => setSelectedSkillName(itemValue)}
-        >
-          {recipientProfile.skillsToTeach.map(skill => (
-            <Picker.Item key={skill.skillName} label={`${skill.skillName} (Custo: ${60 * skill.multiplier} min)`} value={skill.skillName} />
+          onValueChange={(itemValue) => setSelectedSkillName(itemValue)}>
+          {recipientProfile.skillsToTeach.map((skill) => (
+            <Picker.Item
+              key={skill.skillName}
+              label={`${skill.skillName} (Custo: ${60 * skill.multiplier} min)`}
+              value={skill.skillName}
+            />
           ))}
         </Picker>
       </View>
 
-      <Button title="Enviar Proposta" onPress={handleSendProposal} disabled={!selectedSkillName} />
+      <Button
+        title="Enviar Proposta"
+        onPress={handleSendProposal}
+        disabled={!selectedSkillName}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: COLORS.background },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    title: { fontSize: 22, fontWeight: 'bold', color: COLORS.grayDark, textAlign: 'center' },
-    name: { fontSize: 26, fontWeight: 'bold', color: COLORS.primary, textAlign: 'center', marginBottom: 30 },
-    label: { fontSize: 18, color: COLORS.grayDark, marginBottom: 10 },
-    pickerContainer: {
-        backgroundColor: COLORS.white,
-        borderRadius: 10,
-        marginBottom: 30,
-        borderWidth: 1,
-        borderColor: '#ddd',
-    },
+  container: { flex: 1, padding: 20, backgroundColor: COLORS.background },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: COLORS.grayDark,
+    textAlign: "center",
+  },
+  name: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: COLORS.primary,
+    textAlign: "center",
+    marginBottom: 30,
+  },
+  label: { fontSize: 18, color: COLORS.grayDark, marginBottom: 10 },
+  pickerContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
 });

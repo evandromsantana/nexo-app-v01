@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import { getUserProfile } from "@/api/firestore";
-import { COLORS } from "@/constants/colors";
+import { COLORS } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
 import { UserProfile } from "@/types/user";
 
