@@ -1,4 +1,4 @@
-import LogoNexo4Pro from "../../components/app/Logo";
+
 import {
   COLORS,
   FONT_SIZE,
@@ -8,6 +8,8 @@ import {
   SPACING,
 } from "@/constants";
 import { Link } from "expo-router";
+import AuthHeader from "../../components/app/AuthHeader";
+import RegisterForm from "../../components/app/RegisterForm";
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -59,63 +61,19 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <View style={styles.logoContainer}>
-        <LogoNexo4Pro />
+      <AuthHeader title="Crie a sua Conta" subtitle="Comece a trocar conhecimento hoje mesmo." />
 
-        <Text style={styles.title}>Crie a sua Conta</Text>
-        <Text style={styles.subtitle}>
-          Comece a trocar conhecimento hoje mesmo.
-        </Text>
-      </View>
-
-      <View style={styles.form}>
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <TextInput
-          style={styles.input}
-          placeholder="Nome de Exibição"
-          value={displayName}
-          onChangeText={setDisplayName}
-          autoCapitalize="words"
-          placeholderTextColor={COLORS.gray + "99"}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholderTextColor={COLORS.gray + "99"}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholderTextColor={COLORS.gray + "99"}
-        />
-
-        <TouchableOpacity
-          style={[styles.button, loading && { opacity: 0.7 }]}
-          onPress={handleRegister}
-          disabled={loading}>
-          <Text style={styles.buttonText}>
-            {loading ? "Cadastrando..." : "Cadastrar"}
-          </Text>
-        </TouchableOpacity>
-
-        <Link href="/login" asChild>
-          <Pressable style={styles.link}>
-            <Text style={styles.linkText}>
-              Já tem uma conta?{" "}
-              <Text style={styles.linkHighlight}>Faça login</Text>
-            </Text>
-          </Pressable>
-        </Link>
-      </View>
+      <RegisterForm
+        displayName={displayName}
+        setDisplayName={setDisplayName}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        onRegister={handleRegister}
+        isLoading={loading}
+        error={error}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -127,65 +85,6 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     justifyContent: "center",
   },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: SPACING.xl,
-  },
-  title: {
-    fontSize: FONT_SIZE["2xl"],
-    fontWeight: FONT_WEIGHT.bold as any,
-    color: COLORS.primary,
-  },
-  subtitle: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.grayDark,
-    marginTop: SPACING.xs,
-    textAlign: "center",
-  },
-  form: {
-    width: "100%",
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.gray,
-    fontSize: FONT_SIZE.md,
-    color: COLORS.grayDark,
-    ...SHADOWS.sm,
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-    ...SHADOWS.md,
-  },
-  buttonText: {
-    color: COLORS.white,
-    fontSize: FONT_SIZE.md,
-    fontWeight: FONT_WEIGHT.bold as any,
-  },
-  link: {
-    marginTop: SPACING.lg,
-    alignItems: "center",
-  },
-  linkText: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.grayDark,
-  },
-  linkHighlight: {
-    color: COLORS.accent,
-    fontWeight: FONT_WEIGHT.bold as any,
-  },
-  errorText: {
-    color: COLORS.danger,
-    fontSize: FONT_SIZE.sm,
-    marginBottom: SPACING.sm,
-    textAlign: "center",
-  },
+  
+  
 });
