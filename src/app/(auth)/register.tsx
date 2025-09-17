@@ -8,8 +8,8 @@ import {
   SPACING,
 } from "@/constants";
 import { Link } from "expo-router";
-import AuthHeader from "../../components/app/AuthHeader";
-import RegisterForm from "../../components/app/RegisterForm";
+import AuthHeader from "../../components/app/auth/AuthHeader";
+import RegisterForm from "../../components/app/auth/RegisterForm";
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,

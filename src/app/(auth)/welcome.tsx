@@ -3,8 +3,8 @@
 import { COLORS } from "@/constants";
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import AuthHeader from "../../components/app/AuthHeader";
-import WelcomeButtons from "../../components/app/WelcomeButtons";
+import AuthHeader from "../../components/app/auth/AuthHeader";
+import WelcomeButtons from "../../components/app/auth/WelcomeButtons";
 
 // Estrutura do componente como função anônima, conforme 04-CODING-STANDARDS.md
 const WelcomeScreen = () => {

@@ -6,7 +6,7 @@ import {
   getUserProfile,
   updateProposalStatus,
 } from "../../api/firestore";
-import ProposalList from "../../components/app/ProposalList";
+import ProposalList from "../../components/app/proposals/ProposalList";
 import LoadingIndicator from "../../components/ui/LoadingIndicator";
 import { useAuth } from "../../hooks/useAuth";
 import { ProposalWithId } from "../../types/proposal";

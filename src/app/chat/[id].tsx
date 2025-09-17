@@ -1,10 +1,12 @@
 import { COLORS } from "@/constants";
 import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { IMessage } from "react-native-gifted-chat";
 import { ActivityIndicator, StyleSheet } from "react-native";
-import { GiftedChat, IMessage } from "react-native-gifted-chat";
+
 import { getMessagesForChat, sendMessage } from "../../api/firestore";
 import { useAuth } from "../../hooks/useAuth";
+import ChatRoom from "../../components/app/chat/ChatRoom";
 
 export default function ChatRoomScreen() {
   const { id: chatId } = useLocalSearchParams<{ id: string }>();
@@ -37,7 +39,6 @@ export default function ChatRoomScreen() {
   if (isLoading) {
     return (
       <ActivityIndicator
-        style={styles.centered}
         size="large"
         color={COLORS.primary}
       />
@@ -45,9 +46,9 @@ export default function ChatRoomScreen() {
   }
 
   return (
-    <GiftedChat
+    <ChatRoom
       messages={messages}
-      onSend={(messages) => onSend(messages)}
+      onSend={onSend}
       user={{
         _id: user?.uid || "",
       }}
@@ -55,6 +56,4 @@ export default function ChatRoomScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-});
+

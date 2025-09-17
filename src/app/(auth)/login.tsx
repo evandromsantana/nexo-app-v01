@@ -1,8 +1,8 @@
 import { COLORS, SPACING } from "@/constants";
 import React, { useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
-import AuthHeader from "../../components/app/AuthHeader";
-import LoginForm from "../../components/app/LoginForm";
+import AuthHeader from "../../components/app/auth/AuthHeader";
+import LoginForm from "../../components/app/auth/LoginForm";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function LoginScreen() {

@@ -13,7 +13,7 @@ import {
   UIManager,
   View,
 } from "react-native";
-import { UserProfile } from "../../types/user";
+import { UserProfile } from "../../../types/user";
 
 // Habilitar LayoutAnimation para Android
 if (
@@ -51,10 +51,11 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
             source={
               user.photoUrl
                 ? { uri: user.photoUrl }
-                : require("../../assets/default-avatar.png")
+                : require("../../../assets/default-avatar.png")
             }
             style={styles.cardAvatar}
           />
+
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={toggleCard}
@@ -73,7 +74,6 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
               />
             </View>
           </TouchableOpacity>
-
           {/* AJUSTE: Botões aparecem na vista compacta */}
           {!isExpanded && (
             <View style={styles.collapsedButtonContainer}>

@@ -1,14 +1,10 @@
 import { COLORS } from "@/constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Button,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { getUserProfile } from "../../api/firestore";
+import UserDetailDisplay from "../../components/app/profile/UserDetailDisplay";
+import ProposeTradeButton from "../../components/app/proposals/ProposeTradeButton";
 import { UserProfile } from "../../types/user";
 
 export default function UserDetailScreen() {
@@ -58,28 +54,9 @@ export default function UserDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.name}>{userProfile.displayName}</Text>
-      <Text style={styles.bio}>{userProfile.bio || "No bio."}</Text>
+      <UserDetailDisplay userProfile={userProfile} />
 
-      <View style={styles.skillsContainer}>
-        <Text style={styles.skillsTitle}>Habilidades para Ensinar:</Text>
-        {userProfile.skillsToTeach.map((skill) => (
-          <Text key={skill.skillName} style={styles.skill}>
-            - {skill.skillName} (x{skill.multiplier})
-          </Text>
-        ))}
-      </View>
-
-      <View style={styles.skillsContainer}>
-        <Text style={styles.skillsTitle}>Habilidades para Aprender:</Text>
-        {userProfile.skillsToLearn.map((skill) => (
-          <Text key={skill} style={styles.skill}>
-            - {skill}
-          </Text>
-        ))}
-      </View>
-
-      <Button title="Propor Troca" onPress={handleProposeTrade} />
+      <ProposeTradeButton onPress={handleProposeTrade} />
     </View>
   );
 }
@@ -87,24 +64,4 @@ export default function UserDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: COLORS.background },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  name: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    marginBottom: 10,
-  },
-  bio: {
-    fontSize: 16,
-    color: COLORS.grayDark,
-    marginBottom: 20,
-    fontStyle: "italic",
-  },
-  skillsContainer: { marginBottom: 20 },
-  skillsTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    marginBottom: 5,
-  },
-  skill: { fontSize: 16, color: COLORS.grayDark, marginLeft: 10 },
 });

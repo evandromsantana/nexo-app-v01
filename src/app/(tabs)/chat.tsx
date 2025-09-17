@@ -3,7 +3,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { getChatsForUser, getUserProfile } from "../../api/firestore";
-import ChatList from "../../components/app/ChatList";
+import ChatList from "../../components/app/chat/ChatList";
 import LoadingIndicator from "../../components/ui/LoadingIndicator";
 import { useAuth } from "../../hooks/useAuth";
 import { ChatWithId } from "../../types/chat";

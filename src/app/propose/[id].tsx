@@ -1,16 +1,10 @@
 import { COLORS } from "@/constants";
-import { Picker } from "@react-native-picker/picker";
+
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Button,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import { createProposal, getUserProfile } from "../../api/firestore";
+import ProposeForm from "../../components/app/proposals/ProposeForm";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfile } from "../../types/user";
 
@@ -110,30 +104,11 @@ export default function ProposeTradeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Propor Troca com</Text>
-      <Text style={styles.name}>{recipientProfile.displayName}</Text>
-
-      <Text style={styles.label}>
-        Qual habilidade você gostaria de aprender?
-      </Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={selectedSkillName}
-          onValueChange={(itemValue) => setSelectedSkillName(itemValue)}>
-          {recipientProfile.skillsToTeach.map((skill) => (
-            <Picker.Item
-              key={skill.skillName}
-              label={`${skill.skillName} (Custo: ${60 * skill.multiplier} min)`}
-              value={skill.skillName}
-            />
-          ))}
-        </Picker>
-      </View>
-
-      <Button
-        title="Enviar Proposta"
-        onPress={handleSendProposal}
-        disabled={!selectedSkillName}
+      <ProposeForm
+        recipientProfile={recipientProfile}
+        selectedSkillName={selectedSkillName}
+        setSelectedSkillName={setSelectedSkillName}
+        onSendProposal={handleSendProposal}
       />
     </View>
   );
@@ -142,25 +117,4 @@ export default function ProposeTradeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: COLORS.background },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: COLORS.grayDark,
-    textAlign: "center",
-  },
-  name: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    textAlign: "center",
-    marginBottom: 30,
-  },
-  label: { fontSize: 18, color: COLORS.grayDark, marginBottom: 10 },
-  pickerContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 10,
-    marginBottom: 30,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
 });

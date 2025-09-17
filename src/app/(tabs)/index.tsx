@@ -5,13 +5,13 @@ import { Region } from "react-native-maps";
 import Supercluster from "supercluster";
 
 import { getUsers, updateUserLocation } from "../../api/firestore";
-import MapLoadingState from "../../components/app/MapLoadingState";
-import MapSearchInput from "../../components/app/MapSearchInput";
-import UserInfoCard from "../../components/map/UserInfoCard";
+import MapLoadingState from "../../components/app/map/MapLoadingState";
+import MapSearchInput from "../../components/app/map/MapSearchInput";
+import UserInfoCard from "../../components/app/map/UserInfoCard";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfile } from "../../types/user";
 
-import MapComponent, { ClusterItem, PointFeature } from "../../components/app/MapComponent";
+import MapComponent, { ClusterItem, PointFeature } from "../../components/app/map/MapComponent";
 
 // --- HOME SCREEN COMPONENT ---
 export default function HomeScreen() {

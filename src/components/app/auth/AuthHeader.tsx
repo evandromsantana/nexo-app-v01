@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import LogoNexo4Pro from "./Logo"; // Importa o Logo do mesmo diretório
+import { StyleSheet, Text, View } from "react-native";
+import LogoNexo4Pro from "../Logo";
 
 interface AuthHeaderProps {
   title: string;

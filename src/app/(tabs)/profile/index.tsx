@@ -14,9 +14,9 @@ import { getUserProfile } from "@/api/firestore";
 import { COLORS } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
 import { UserProfile } from "@/types/user";
-import ProfileHeader from "../../../components/app/ProfileHeader";
-import ProfileInfoBox from "../../../components/app/ProfileInfoBox";
-import ProfileActions from "../../../components/app/ProfileActions";
+import ProfileHeader from "../../../components/app/profile/ProfileHeader";
+import ProfileInfoBox from "../../../components/app/profile/ProfileInfoBox";
+import ProfileActions from "../../../components/app/profile/ProfileActions";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();

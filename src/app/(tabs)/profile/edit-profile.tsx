@@ -18,10 +18,10 @@ import { uploadImage } from "../../../api/cloudinary";
 import { getUserProfile, updateUserProfile } from "../../../api/firestore";
 import { useAuth } from "../../../hooks/useAuth";
 import { TaughtSkill, UserProfile } from "../../../types/user";
-import ProfileImagePicker from "../../../components/app/ProfileImagePicker";
-import ProfileInputField from "../../../components/app/ProfileInputField";
-import SkillsToTeachEditor from "../../../components/app/SkillsToTeachEditor";
-import ProfileSaveButton from "../../../components/app/ProfileSaveButton";
+import ProfileImagePicker from "../../../components/app/profile/ProfileImagePicker";
+import ProfileInputField from "../../../components/app/profile/ProfileInputField";
+import SkillsToTeachEditor from "../../../components/app/profile/SkillsToTeachEditor";
+import ProfileSaveButton from "../../../components/app/profile/ProfileSaveButton";
 
 // Use a local interface for the form state to handle the multiplier as a string
 interface EditableTaughtSkill {
