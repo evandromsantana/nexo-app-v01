@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { COLORS } from "@/constants";
-import { UserProfile } from "../../types/user";
+import { UserProfile } from "../../../types/user";
 
 interface ProposeFormProps {
   recipientProfile: UserProfile | null;

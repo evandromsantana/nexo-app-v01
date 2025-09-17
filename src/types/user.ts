@@ -19,7 +19,7 @@ export const TaughtSkillSchema = z.object({
 // Schema for the user profile
 export const UserProfileSchema = z.object({
   uid: z.string(),
-  email: z.string().email(),
+  email: z.string().email().nullable(),
   displayName: z.string(),
   photoUrl: z.string().url().nullable(),
   bio: z.string(),

@@ -20,7 +20,7 @@ import ProfileActions from "../../../components/app/profile/ProfileActions";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null) as [UserProfile | null, React.Dispatch<React.SetStateAction<UserProfile | null>>];
   const [isLoading, setIsLoading] = useState(true);
 
   useFocusEffect(

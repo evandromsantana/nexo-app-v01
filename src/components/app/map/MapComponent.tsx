@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import Supercluster from "supercluster";
 import { COLORS } from "@/constants";
-import { UserProfile } from "../../types/user"; // Importar UserProfile
+import { UserProfile } from "../../../types/user"; // Importar UserProfile
 
 // --- TYPE DEFINITIONS ---
 export interface PointFeature {

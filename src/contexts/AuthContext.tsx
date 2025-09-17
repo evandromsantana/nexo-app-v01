@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { User as FirebaseUser, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { User as FirebaseUser, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { auth } from '../api/firebase';
 import { createUserProfile } from '../api/firestore';
 
@@ -24,12 +26,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setIsLoading(false);
-    });
+    const setupPersistence = async () => {
+      if (Platform.OS === 'web') {
+        await setPersistence(auth, browserLocalPersistence);
+      } else {
+        await setPersistence(auth, ReactNativeAsyncStorage as any);
+      }
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        setUser(firebaseUser);
+        setIsLoading(false);
+      });
+      return () => unsubscribe();
+    };
 
-    return () => unsubscribe();
+    setupPersistence();
   }, []);
 
   const login = async (email: string, password: string) => {

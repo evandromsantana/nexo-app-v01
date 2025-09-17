@@ -5,7 +5,7 @@ import { COLORS } from "@/constants"; // Assumindo que COLORS está disponível 
 interface ProfileHeaderProps {
   photoUrl: string | undefined;
   displayName: string | undefined;
-  email: string | undefined;
+  email: string | null | undefined;
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({

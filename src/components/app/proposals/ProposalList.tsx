@@ -5,10 +5,11 @@ import {
   StyleSheet,
   Text,
   View,
+  Pressable,
 } from "react-native";
 import { COLORS } from "@/constants";
-import { ProposalWithId } from "../../types/proposal";
-import { UserProfile } from "../../types/user";
+import { ProposalWithId } from "../../../types/proposal";
+import { UserProfile } from "../../../types/user";
 
 // Componente de cartão de proposta (copiado de proposals.tsx)
 const ProposalCard = ({

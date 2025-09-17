@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { COLORS } from "@/constants";
-import { UserProfile } from "../../types/user";
+import { UserProfile } from "../../../types/user";
 
 interface UserDetailDisplayProps {
   userProfile: UserProfile;

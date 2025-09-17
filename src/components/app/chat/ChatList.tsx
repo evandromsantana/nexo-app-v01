@@ -8,8 +8,8 @@ import {
   View,
 } from "react-native";
 import { COLORS } from "@/constants";
-import { ChatWithId } from "../../types/chat";
-import { UserProfile } from "../../types/user";
+import { ChatWithId } from "../../../types/chat";
+import { UserProfile } from "../../../types/user";
 
 // Helper component for rendering a single chat item (copiado de chat.tsx)
 const ChatListItem = ({
