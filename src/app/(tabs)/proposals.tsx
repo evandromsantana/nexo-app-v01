@@ -1,19 +1,15 @@
 import { COLORS } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
-import { ProposalWithId } from "@/types/proposal";
 import { UserProfile } from "@/types/user";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import React, { useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useMemo, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   getProposalsForUser,
   getUserProfile,
   updateProposalStatus,
 } from "../../api/firestore";
+
 import ProposalList from "../../components/app/proposals/ProposalList";
 import LoadingIndicator from "../../components/ui/LoadingIndicator";
 
@@ -35,10 +31,11 @@ const fetchUserProfiles = async (userIds: string[]) => {
 export default function ProposalsScreen() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
 
   // 1. Query to fetch proposals
-  const { 
-    data: proposals = { received: [], sent: [] }, 
+  const {
+    data: proposals = { received: [], sent: [] },
     isLoading: proposalsLoading,
     refetch: refetchProposals,
     isRefetching,
@@ -64,6 +61,13 @@ export default function ProposalsScreen() {
     enabled: allUserIds.length > 0, // Only run if there are user IDs to fetch
   });
 
+  // Query to fetch the current user's profile for timeBalance check
+  const { data: currentUserProfile } = useQuery({
+    queryKey: ["userProfile", user?.uid],
+    queryFn: () => getUserProfile(user!.uid),
+    enabled: !!user,
+  });
+
   // 3. Mutation to update proposal status
   const { mutate: handleUpdateStatus } = useMutation({
     mutationFn: (variables: {
@@ -71,7 +75,7 @@ export default function ProposalsScreen() {
       status: "accepted" | "declined" | "completed";
       proposerId: string;
       recipientId: string;
-    }) => 
+    }) =>
       updateProposalStatus(
         variables.proposalId,
         variables.status,
@@ -93,31 +97,92 @@ export default function ProposalsScreen() {
 
   return (
     <View style={styles.container}>
-      <ProposalList
-        title="Propostas Recebidas"
-        proposals={proposals.received}
-        userProfiles={userProfiles}
-        currentUserId={user?.uid}
-        onUpdate={handleUpdateStatus}
-        onRefresh={refetchProposals}
-        refreshing={isRefetching}
-        emptyMessage="Nenhuma proposta recebida."
-      />
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === "received" && styles.activeTabButton,
+          ]}
+          onPress={() => setActiveTab("received")}>
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === "received" && styles.activeTabButtonText,
+            ]}>
+            Recebidas
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === "sent" && styles.activeTabButton,
+          ]}
+          onPress={() => setActiveTab("sent")}>
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === "sent" && styles.activeTabButtonText,
+            ]}>
+            Enviadas
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      <ProposalList
-        title="Propostas Enviadas"
-        proposals={proposals.sent}
-        userProfiles={userProfiles}
-        currentUserId={user?.uid}
-        onUpdate={handleUpdateStatus}
-        onRefresh={refetchProposals}
-        refreshing={isRefetching}
-        emptyMessage="Nenhuma proposta enviada."
-      />
+      {activeTab === "received" ? (
+        <ProposalList
+          type="received"
+          proposals={proposals.received}
+          userProfiles={userProfiles}
+          currentUserId={user?.uid}
+          currentUserProfile={currentUserProfile}
+          onUpdate={handleUpdateStatus}
+          onRefresh={refetchProposals}
+          refreshing={isRefetching}
+          emptyMessage="Nenhuma proposta recebida."
+        />
+      ) : (
+        <ProposalList
+          type="sent"
+          proposals={proposals.sent}
+          userProfiles={userProfiles}
+          currentUserId={user?.uid}
+          currentUserProfile={currentUserProfile}
+          onUpdate={handleUpdateStatus}
+          onRefresh={refetchProposals}
+          refreshing={isRefetching}
+          emptyMessage="Nenhuma proposta enviada."
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 10, backgroundColor: COLORS.background },
+  tabContainer: {
+    flexDirection: "row",
+    marginBottom: 10,
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  activeTabButton: {
+    borderBottomColor: COLORS.primary,
+  },
+  tabButtonText: {
+    fontSize: 16,
+    fontFamily: "LeagueSpartan-SemiBold",
+    color: COLORS.textSecondary,
+  },
+  activeTabButtonText: {
+    color: COLORS.primary,
+  },
 });

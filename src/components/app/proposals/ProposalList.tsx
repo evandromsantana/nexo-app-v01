@@ -6,51 +6,107 @@ import {
   Text,
   View,
   Pressable,
+  Image,
 } from "react-native";
 import { COLORS } from "@/constants";
 import { ProposalWithId } from "../../../types/proposal";
 import { UserProfile } from "../../../types/user";
 
-// Componente de cartão de proposta (copiado de proposals.tsx)
+// Componente de cartão de proposta
 const ProposalCard = ({
   proposal,
   type,
   onUpdate,
   userProfiles,
   currentUserId,
+  currentUserProfile,
 }: {
   proposal: ProposalWithId;
   type: "received" | "sent";
   onUpdate: (
-    proposalId: string,
-    status: "accepted" | "declined" | "completed",
-    proposerId: string,
-    recipientId: string
-  ) => Promise<void>;
+    variables: {
+      proposalId: string;
+      status: "accepted" | "declined" | "completed";
+      proposerId: string;
+      recipientId: string;
+    }
+  ) => void;
   userProfiles: Record<string, UserProfile>;
   currentUserId: string | undefined;
+  currentUserProfile: UserProfile | undefined;
 }) => {
   const otherUserId =
     type === "received" ? proposal.proposerId : proposal.recipientId;
   const otherUser = userProfiles[otherUserId];
 
   const handleUpdate = (status: "accepted" | "declined" | "completed") => {
-    onUpdate(proposal.id, status, proposal.proposerId, proposal.recipientId);
+    onUpdate({
+      proposalId: proposal.id,
+      status,
+      proposerId: proposal.proposerId,
+      recipientId: proposal.recipientId,
+    });
   };
+
+  // Logic for time balance display
+  let balanceMessage = "";
+  let balanceColor = COLORS.textSecondary;
+
+  if (currentUserProfile) {
+    const cost = proposal.costInMinutes;
+    let payerBalance = 0;
+
+    if (type === "received") {
+      // Current user is recipient, proposer needs to pay
+      const proposerProfile = userProfiles[proposal.proposerId];
+      payerBalance = proposerProfile?.timeBalance || 0;
+      if (payerBalance >= cost) {
+        balanceMessage = `Proponente tem ${payerBalance} min. Saldo suficiente para ${cost} min.`;
+        balanceColor = COLORS.success;
+      } else {
+        balanceMessage = `Proponente tem ${payerBalance} min. Saldo insuficiente para ${cost} min.`;
+        balanceColor = COLORS.danger;
+      }
+    } else { // type === "sent"
+      // Current user is proposer, current user needs to pay
+      payerBalance = currentUserProfile.timeBalance || 0;
+      if (payerBalance >= cost) {
+        balanceMessage = `Você tem ${payerBalance} min. Saldo suficiente para ${cost} min.`;
+        balanceColor = COLORS.success;
+      } else {
+        balanceMessage = `Você tem ${payerBalance} min. Saldo insuficiente para ${cost} min.`;
+        balanceColor = COLORS.danger;
+      }
+    }
+  }
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardText}>
-        {type === "received"
-          ? `De: ${otherUser?.displayName || "..."}`
-          : `Para: ${otherUser?.displayName || "..."}`}
-      </Text>
-
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>Habilidade: {proposal.skillName}</Text>
+      <View style={styles.cardHeader}>
+        <Image
+          source={
+            otherUser?.photoUrl
+              ? { uri: otherUser.photoUrl }
+              : require("../../../assets/default-avatar.png")
+          }
+          style={styles.avatar}
+        />
+        <View>
+          <Text style={styles.cardText}>
+            {type === "received"
+              ? `De: ${otherUser?.displayName || "..."}`
+              : `Para: ${otherUser?.displayName || "..."}`}
+          </Text>
+          <Text style={styles.cardSkill}>Habilidade: {proposal.skillName}</Text>
+        </View>
       </View>
 
       <Text style={styles.cardStatus}>Status: {proposal.status}</Text>
+      {balanceMessage ? (
+        <Text style={[styles.balanceText, { color: balanceColor }]}>
+          {balanceMessage}
+        </Text>
+      ) : null}
 
       {type === "received" && proposal.status === "pending" && (
         <View style={styles.buttonGroup}>
@@ -81,16 +137,20 @@ const ProposalCard = ({
 };
 
 interface ProposalListProps {
-  title: string;
+  title?: string;
+  type: "received" | "sent";
   proposals: ProposalWithId[];
   userProfiles: Record<string, UserProfile>;
   currentUserId: string | undefined;
+  currentUserProfile: UserProfile | null | undefined;
   onUpdate: (
-    proposalId: string,
-    status: "accepted" | "declined" | "completed",
-    proposerId: string,
-    recipientId: string
-  ) => Promise<void>;
+    variables: {
+      proposalId: string;
+      status: "accepted" | "declined" | "completed";
+      proposerId: string;
+      recipientId: string;
+    }
+  ) => void;
   onRefresh: () => void;
   refreshing: boolean;
   emptyMessage: string;
@@ -98,9 +158,11 @@ interface ProposalListProps {
 
 const ProposalList: React.FC<ProposalListProps> = ({
   title,
+  type,
   proposals,
   userProfiles,
   currentUserId,
+  currentUserProfile,
   onUpdate,
   onRefresh,
   refreshing,
@@ -108,17 +170,18 @@ const ProposalList: React.FC<ProposalListProps> = ({
 }) => {
   return (
     <>
-      <Text style={styles.title}>{title}</Text>
+      {title && <Text style={styles.title}>{title}</Text>}
       <FlatList
         data={proposals}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <ProposalCard
             proposal={item}
-            type={title.includes("Recebidas") ? "received" : "sent"}
+            type={type}
             onUpdate={onUpdate}
             userProfiles={userProfiles}
             currentUserId={currentUserId}
+            currentUserProfile={currentUserProfile}
           />
         )}
         ListEmptyComponent={
@@ -142,7 +205,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   card: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.card,
     padding: 15,
     borderRadius: 15,
     marginVertical: 5,
@@ -153,14 +216,25 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  cardText: { fontSize: 16, color: COLORS.grayDark },
-  cardSkill: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    marginVertical: 5,
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
   },
-  cardStatus: { fontSize: 14, fontStyle: "italic", color: COLORS.secondary },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  cardText: { fontSize: 16, color: COLORS.textPrimary, fontWeight: "bold" },
+  cardSkill: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginVertical: 2,
+  },
+  cardStatus: { fontSize: 14, fontStyle: "italic", color: COLORS.secondary, marginBottom: 5 },
+  balanceText: { fontSize: 14, fontWeight: "bold", marginBottom: 10 },
   buttonGroup: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -181,16 +255,8 @@ const styles = StyleSheet.create({
   buttonDecline: { backgroundColor: COLORS.danger },
   buttonComplete: { backgroundColor: COLORS.primary },
   buttonText: { color: COLORS.white, fontWeight: "bold", fontSize: 14 },
-  badge: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.info,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginVertical: 4,
-  },
-  badgeText: { color: COLORS.white, fontSize: 12, fontWeight: "bold" },
   emptyText: { textAlign: "center", color: COLORS.grayDark, marginTop: 20 },
 });
 
 export default ProposalList;
+
