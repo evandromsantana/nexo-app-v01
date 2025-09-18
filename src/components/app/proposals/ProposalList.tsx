@@ -114,20 +114,29 @@ const ProposalCard = ({
         </Text>
       ) : null}
 
-      {type === "received" && proposal.status === "pending" && (
-        <View style={styles.buttonGroup}>
-          <Pressable
-            style={[styles.button, styles.buttonAccept]}
-            onPress={() => handleUpdate("accepted")}>
-            <Text style={styles.buttonText}>Aceitar</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.button, styles.buttonDecline]}
-            onPress={() => handleUpdate("declined")}>
-            <Text style={styles.buttonText}>Recusar</Text>
-          </Pressable>
-        </View>
-      )}
+      {type === "received" &&
+        (proposal.status === "pending" ? (
+          <View style={styles.buttonGroup}>
+            <Pressable
+              style={[styles.button, styles.buttonAccept]}
+              onPress={() => handleUpdate("accepted")}>
+              <Text style={styles.buttonText}>Aceitar</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.button, styles.buttonDecline]}
+              onPress={() => handleUpdate("declined")}>
+              <Text style={styles.buttonText}>Recusar</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.statusFeedback}>
+            <Text style={styles.statusFeedbackText}>
+              {proposal.status === "accepted" && "Você aceitou esta proposta."}
+              {proposal.status === "declined" && "Você recusou esta proposta."}
+              {proposal.status === "completed" && "Esta troca foi concluída."}
+            </Text>
+          </View>
+        ))}
 
       {type === "sent" &&
         proposal.status === "accepted" &&
@@ -262,6 +271,18 @@ const styles = StyleSheet.create({
   buttonDecline: { backgroundColor: COLORS.danger },
   buttonComplete: { backgroundColor: COLORS.primary },
   buttonText: { color: COLORS.white, fontWeight: "bold", fontSize: 14 },
+  statusFeedback: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  statusFeedbackText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
   emptyText: { textAlign: "center", color: COLORS.grayDark, marginTop: 20 },
 });
 
