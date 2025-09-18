@@ -4,29 +4,10 @@ import { UserProfile } from "@/types/user";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import {
-  getProposalsForUser,
-  getUserProfile,
-  updateProposalStatus,
-} from "../../api/firestore";
-
+import { getProposalsForUser, updateProposalStatus } from "../../api/firestore/proposal";
+import { fetchUserProfiles, getUserProfile } from "../../api/firestore/user";
 import ProposalList from "../../components/app/proposals/ProposalList";
 import LoadingIndicator from "../../components/ui/LoadingIndicator";
-
-// Helper function to fetch multiple user profiles
-const fetchUserProfiles = async (userIds: string[]) => {
-  const uniqueUserIds = [...new Set(userIds)];
-  const profilePromises = uniqueUserIds.map((id) => getUserProfile(id));
-  const profiles = await Promise.all(profilePromises);
-
-  const profileMap: Record<string, UserProfile> = {};
-  profiles.forEach((profile) => {
-    if (profile) {
-      profileMap[profile.uid] = profile;
-    }
-  });
-  return profileMap;
-};
 
 export default function ProposalsScreen() {
   const { user } = useAuth();
@@ -95,6 +76,13 @@ export default function ProposalsScreen() {
     return <LoadingIndicator />;
   }
 
+  // Define variables for the active tab before the main return
+  const activeProposals = proposals[activeTab];
+  const emptyMessage =
+    activeTab === "received"
+      ? "Nenhuma proposta recebida."
+      : "Nenhuma proposta enviada.";
+
   return (
     <View style={styles.container}>
       <View style={styles.tabContainer}>
@@ -128,31 +116,17 @@ export default function ProposalsScreen() {
         </TouchableOpacity>
       </View>
 
-      {activeTab === "received" ? (
-        <ProposalList
-          type="received"
-          proposals={proposals.received}
-          userProfiles={userProfiles}
-          currentUserId={user?.uid}
-          currentUserProfile={currentUserProfile}
-          onUpdate={handleUpdateStatus}
-          onRefresh={refetchProposals}
-          refreshing={isRefetching}
-          emptyMessage="Nenhuma proposta recebida."
-        />
-      ) : (
-        <ProposalList
-          type="sent"
-          proposals={proposals.sent}
-          userProfiles={userProfiles}
-          currentUserId={user?.uid}
-          currentUserProfile={currentUserProfile}
-          onUpdate={handleUpdateStatus}
-          onRefresh={refetchProposals}
-          refreshing={isRefetching}
-          emptyMessage="Nenhuma proposta enviada."
-        />
-      )}
+      <ProposalList
+        type={activeTab}
+        proposals={activeProposals}
+        userProfiles={userProfiles}
+        currentUserId={user?.uid}
+        currentUserProfile={currentUserProfile}
+        onUpdate={handleUpdateStatus}
+        onRefresh={refetchProposals}
+        refreshing={isRefetching}
+        emptyMessage={emptyMessage}
+      />
     </View>
   );
 }

@@ -101,6 +101,12 @@ const ProposalCard = ({
         </View>
       </View>
 
+      <Text style={styles.cardDate}>
+        Enviada em:{" "}
+        {proposal.createdAt?.toDate
+          ? proposal.createdAt.toDate().toLocaleDateString("pt-BR")
+          : "..."}
+      </Text>
       <Text style={styles.cardStatus}>Status: {proposal.status}</Text>
       {balanceMessage ? (
         <Text style={[styles.balanceText, { color: balanceColor }]}>
@@ -233,6 +239,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginVertical: 2,
   },
+  cardDate: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 5 },
   cardStatus: { fontSize: 14, fontStyle: "italic", color: COLORS.secondary, marginBottom: 5 },
   balanceText: { fontSize: 14, fontWeight: "bold", marginBottom: 10 },
   buttonGroup: {

@@ -89,3 +89,24 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
     await updateDoc(userRef, data);
 };
 
+/**
+ * Fetches multiple user profiles from a list of user IDs.
+ * @param userIds An array of user IDs.
+ * @returns A map of user IDs to user profiles.
+ */
+export const fetchUserProfiles = async (userIds: string[]): Promise<Record<string, UserProfile>> => {
+  if (userIds.length === 0) {
+    return {};
+  }
+  const uniqueUserIds = [...new Set(userIds)];
+  const profilePromises = uniqueUserIds.map((id) => getUserProfile(id));
+  const profiles = await Promise.all(profilePromises);
+
+  const profileMap: Record<string, UserProfile> = {};
+  profiles.forEach((profile) => {
+    if (profile) {
+      profileMap[profile.uid] = profile;
+    }
+  });
+  return profileMap;
+};
