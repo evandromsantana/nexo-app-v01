@@ -1,74 +1,66 @@
 import { COLORS } from "@/constants";
-import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { ChatWithId } from "@/types/chat";
+import { UserProfile } from "@/types/user";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { getChatsForUser, getUserProfile } from "../../api/firestore";
 import ChatList from "../../components/app/chat/ChatList";
 import LoadingIndicator from "../../components/ui/LoadingIndicator";
-import { useAuth } from "../../hooks/useAuth";
-import { ChatWithId } from "../../types/chat";
-import { UserProfile } from "../../types/user";
+
+// Helper function to fetch multiple user profiles
+const fetchUserProfiles = async (userIds: string[]) => {
+  const uniqueUserIds = [...new Set(userIds)];
+  const profilePromises = uniqueUserIds.map((id) => getUserProfile(id));
+  const profiles = await Promise.all(profilePromises);
+
+  const profileMap: Record<string, UserProfile> = {};
+  profiles.forEach((profile) => {
+    if (profile) {
+      profileMap[profile.uid] = profile;
+    }
+  });
+  return profileMap;
+};
 
 export default function ChatScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const [chats, setChats] = useState<ChatWithId[]>([]);
-  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>(
-    {}
-  );
-  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchChatsAndProfiles = useCallback(async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      const userChats = await getChatsForUser(user.uid);
-      setChats(userChats);
+  // 1. Query to fetch chats
+  const { 
+    data: chats = [], 
+    isLoading: chatsLoading,
+    refetch: refetchChats,
+    isRefetching,
+  } = useQuery<ChatWithId[], Error, ChatWithId[]>({ 
+    queryKey: ["chats", user?.uid],
+    queryFn: () => getChatsForUser(user!.uid),
+    enabled: !!user,
+  });
 
-      const otherUserIds: string[] = userChats
-        .map((chat) => chat.users.find((uid) => uid !== user.uid))
-        .filter((id): id is string => typeof id === "string");
-      const uniqueUserIds = [...new Set(otherUserIds)];
+  // 2. Dependent query to fetch user profiles based on chat data
+  const otherUserIds = useMemo(() => {
+    if (!user || !chats) return [];
+    const ids = chats
+      .map((chat) => chat.users.find((uid) => uid !== user.uid))
+      .filter((id): id is string => !!id);
+    return [...new Set(ids)];
+  }, [chats, user]);
 
-      const profilesToFetch = uniqueUserIds.filter(
-        (id) => !(userProfiles as Record<string, UserProfile>)[id]
-      );
-      if (profilesToFetch.length > 0) {
-        const fetchedProfiles = await Promise.all(
-          profilesToFetch.map((id) => getUserProfile(id))
-        );
-
-        const newProfiles = fetchedProfiles.reduce(
-          (acc: Record<string, UserProfile>, profile) => {
-            if (profile) {
-              acc[profile.uid] = profile;
-            }
-            return acc;
-          },
-          {}
-        );
-
-        setUserProfiles((prev) => ({ ...prev, ...newProfiles }));
-      }
-    } catch (error) {
-      console.error("Failed to fetch chats:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, userProfiles]);
-
-  // useFocusEffect to refetch when the screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      fetchChatsAndProfiles();
-    }, [fetchChatsAndProfiles])
-  );
+  const { data: userProfiles = {}, isLoading: profilesLoading } = useQuery({
+    queryKey: ["userProfiles", otherUserIds],
+    queryFn: () => fetchUserProfiles(otherUserIds),
+    enabled: otherUserIds.length > 0,
+  });
 
   const handlePressChat = (chatId: string) => {
     router.push(`/chat/${chatId}`);
   };
 
-  if (isLoading) {
+  if (chatsLoading || profilesLoading) {
     return <LoadingIndicator />;
   }
 
@@ -79,8 +71,8 @@ export default function ChatScreen() {
         userProfiles={userProfiles}
         currentUserId={user?.uid}
         onPressChat={handlePressChat}
-        onRefresh={fetchChatsAndProfiles}
-        refreshing={isLoading}
+        onRefresh={refetchChats}
+        refreshing={isRefetching}
         emptyMessage="Nenhuma conversa iniciada."
       />
     </View>

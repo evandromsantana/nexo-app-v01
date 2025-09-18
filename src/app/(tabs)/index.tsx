@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -5,20 +6,21 @@ import { Region } from "react-native-maps";
 import Supercluster from "supercluster";
 
 import { getUsers, updateUserLocation } from "../../api/firestore";
+import MapComponent, {
+  ClusterItem,
+  PointFeature,
+} from "../../components/app/map/MapComponent";
 import MapLoadingState from "../../components/app/map/MapLoadingState";
 import MapSearchInput from "../../components/app/map/MapSearchInput";
 import UserInfoCard from "../../components/app/map/UserInfoCard";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfile } from "../../types/user";
 
-import MapComponent, { ClusterItem, PointFeature } from "../../components/app/map/MapComponent";
-
 // --- HOME SCREEN COMPONENT ---
 export default function HomeScreen() {
   const { user } = useAuth();
   const [region, setRegion] = useState<Region | null>(null);
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
@@ -27,7 +29,7 @@ export default function HomeScreen() {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setLoading(false);
+        setLocationLoading(false);
         return;
       }
       const loc = await Location.getCurrentPositionAsync({});
@@ -38,18 +40,17 @@ export default function HomeScreen() {
         longitudeDelta: 0.08,
       });
       if (user) await updateUserLocation(user.uid, loc.coords);
-      setLoading(false);
+      setLocationLoading(false);
     })();
   }, [user]);
 
-  // Load other users
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const allUsers = await getUsers();
-      setUsers(allUsers.filter((u) => u.uid !== user.uid));
-    })();
-  }, [user]);
+  // Load other users with React Query
+  const { data: users = [], isLoading: isUsersLoading } = useQuery<UserProfile[], Error, UserProfile[]>({ 
+    queryKey: ["users"],
+    queryFn: getUsers,
+    enabled: !!user,
+    select: (allUsers) => allUsers.filter((u) => u.uid !== user?.uid),
+  });
 
   // Filtered users
   const filteredUsers = useMemo(() => {
@@ -100,7 +101,7 @@ export default function HomeScreen() {
     ) as ClusterItem[];
   }, [clusterIndex, region]);
 
-  if (loading || !region) {
+  if (locationLoading || isUsersLoading || !region) {
     return <MapLoadingState />;
   }
 

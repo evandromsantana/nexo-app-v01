@@ -1,33 +1,26 @@
 import { COLORS } from "@/constants";
+import { UserProfile } from "@/types/user";
+import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { getUserProfile } from "../../api/firestore";
 import UserDetailDisplay from "../../components/app/profile/UserDetailDisplay";
 import ProposeTradeButton from "../../components/app/proposals/ProposeTradeButton";
-import { UserProfile } from "../../types/user";
 
 export default function UserDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
-      const fetchProfile = async () => {
-        try {
-          const profile = await getUserProfile(id);
-          setUserProfile(profile);
-        } catch (error) {
-          console.error("Failed to fetch user profile:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchProfile();
-    }
-  }, [id]);
+  const { 
+    data: userProfile, 
+    isLoading, 
+    isError 
+  } = useQuery<UserProfile | null, Error>({ 
+    queryKey: ["userProfile", id],
+    queryFn: () => getUserProfile(id!),
+    enabled: !!id,
+  });
 
   if (isLoading) {
     return (
@@ -39,7 +32,7 @@ export default function UserDetailScreen() {
     );
   }
 
-  if (!userProfile) {
+  if (isError || !userProfile) {
     return (
       <View style={styles.centered}>
         <Text>User not found.</Text>
@@ -48,7 +41,6 @@ export default function UserDetailScreen() {
   }
 
   const handleProposeTrade = () => {
-    // Navigate to proposal creation screen, passing the user id
     router.push(`/propose/${id}`);
   };
 

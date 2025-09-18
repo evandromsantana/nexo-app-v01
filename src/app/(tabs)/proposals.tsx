@@ -1,5 +1,13 @@
 import { COLORS } from "@/constants";
-import React, { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { ProposalWithId } from "@/types/proposal";
+import { UserProfile } from "@/types/user";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   getProposalsForUser,
@@ -8,83 +16,78 @@ import {
 } from "../../api/firestore";
 import ProposalList from "../../components/app/proposals/ProposalList";
 import LoadingIndicator from "../../components/ui/LoadingIndicator";
-import { useAuth } from "../../hooks/useAuth";
-import { ProposalWithId } from "../../types/proposal";
-import { UserProfile } from "../../types/user";
+
+// Helper function to fetch multiple user profiles
+const fetchUserProfiles = async (userIds: string[]) => {
+  const uniqueUserIds = [...new Set(userIds)];
+  const profilePromises = uniqueUserIds.map((id) => getUserProfile(id));
+  const profiles = await Promise.all(profilePromises);
+
+  const profileMap: Record<string, UserProfile> = {};
+  profiles.forEach((profile) => {
+    if (profile) {
+      profileMap[profile.uid] = profile;
+    }
+  });
+  return profileMap;
+};
 
 export default function ProposalsScreen() {
   const { user } = useAuth();
-  const [proposals, setProposals] = useState<{
-    received: ProposalWithId[];
-    sent: ProposalWithId[];
-  }>({ received: [], sent: [] });
-  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>(
-    {}
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchProposals = useCallback(async () => {
-    if (!user) return;
-    try {
-      const { received, sent } = await getProposalsForUser(user.uid);
-      setProposals({ received, sent });
+  // 1. Query to fetch proposals
+  const { 
+    data: proposals = { received: [], sent: [] }, 
+    isLoading: proposalsLoading,
+    refetch: refetchProposals,
+    isRefetching,
+  } = useQuery({
+    queryKey: ["proposals", user?.uid],
+    queryFn: () => getProposalsForUser(user!.uid),
+    enabled: !!user,
+  });
 
-      const allUserIds = [
-        ...received.map((p) => p.proposerId),
-        ...sent.map((p) => p.recipientId),
-      ];
-      const uniqueUserIds = [...new Set(allUserIds)];
+  // 2. Dependent query to fetch user profiles based on proposal data
+  const allUserIds = useMemo(() => {
+    if (!proposals) return [];
+    const ids = [
+      ...proposals.received.map((p) => p.proposerId),
+      ...proposals.sent.map((p) => p.recipientId),
+    ];
+    return [...new Set(ids)];
+  }, [proposals]);
 
-      const profilesToFetch = uniqueUserIds.filter(
-        (id) => !(userProfiles as Record<string, UserProfile>)[id]
-      );
-      if (profilesToFetch.length > 0) {
-        const fetchedProfiles = await Promise.all(
-          profilesToFetch.map((id) => getUserProfile(id))
-        );
-        const newProfiles: Record<string, UserProfile> = {};
-        fetchedProfiles.forEach((profile) => {
-          if (profile) newProfiles[profile.uid] = profile;
-        });
-        setUserProfiles((prev) => ({ ...prev, ...newProfiles }));
-      }
-    } catch (error) {
-      console.error("Failed to fetch proposals:", error);
-    }
-  }, [user, userProfiles]);
+  const { data: userProfiles = {}, isLoading: profilesLoading } = useQuery({
+    queryKey: ["userProfiles", allUserIds],
+    queryFn: () => fetchUserProfiles(allUserIds),
+    enabled: allUserIds.length > 0, // Only run if there are user IDs to fetch
+  });
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    await fetchProposals();
-    setIsLoading(false);
-  }, [fetchProposals]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchProposals();
-    setRefreshing(false);
-  }, [fetchProposals]);
-
-  useEffect(() => {
-    if (user) loadData();
-  }, [user, loadData]);
-
-  const handleUpdateStatus = async (
-    proposalId: string,
-    status: "accepted" | "declined" | "completed",
-    proposerId: string,
-    recipientId: string
-  ) => {
-    try {
-      await updateProposalStatus(proposalId, status, proposerId, recipientId);
-      onRefresh();
-    } catch (error) {
+  // 3. Mutation to update proposal status
+  const { mutate: handleUpdateStatus } = useMutation({
+    mutationFn: (variables: {
+      proposalId: string;
+      status: "accepted" | "declined" | "completed";
+      proposerId: string;
+      recipientId: string;
+    }) => 
+      updateProposalStatus(
+        variables.proposalId,
+        variables.status,
+        variables.proposerId,
+        variables.recipientId
+      ),
+    onSuccess: () => {
+      // When mutation is successful, invalidate the proposals query to refetch
+      queryClient.invalidateQueries({ queryKey: ["proposals", user?.uid] });
+    },
+    onError: (error) => {
       console.error("Failed to update proposal status:", error);
-    }
-  };
+    },
+  });
 
-  if (isLoading) {
+  if (proposalsLoading || profilesLoading) {
     return <LoadingIndicator />;
   }
 
@@ -96,8 +99,8 @@ export default function ProposalsScreen() {
         userProfiles={userProfiles}
         currentUserId={user?.uid}
         onUpdate={handleUpdateStatus}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
+        onRefresh={refetchProposals}
+        refreshing={isRefetching}
         emptyMessage="Nenhuma proposta recebida."
       />
 
@@ -107,8 +110,8 @@ export default function ProposalsScreen() {
         userProfiles={userProfiles}
         currentUserId={user?.uid}
         onUpdate={handleUpdateStatus}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
+        onRefresh={refetchProposals}
+        refreshing={isRefetching}
         emptyMessage="Nenhuma proposta enviada."
       />
     </View>

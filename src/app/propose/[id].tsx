@@ -1,88 +1,72 @@
 import { COLORS } from "@/constants";
-
+import { useAuth } from "@/hooks/useAuth";
+import { UserProfile } from "@/types/user";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import { createProposal, getUserProfile } from "../../api/firestore";
 import ProposeForm from "../../components/app/proposals/ProposeForm";
-import { useAuth } from "../../hooks/useAuth";
-import { UserProfile } from "../../types/user";
 
 export default function ProposeTradeScreen() {
   const { id: recipientId } = useLocalSearchParams<{ id: string }>();
   const { user: currentUser } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [recipientProfile, setRecipientProfile] = useState<UserProfile | null>(
-    null
-  );
-  const [selectedSkillName, setSelectedSkillName] = useState<string | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
 
+  // 1. Query to fetch recipient's profile
+  const { data: recipientProfile, isLoading } = useQuery<UserProfile | null, Error>({ 
+    queryKey: ["userProfile", recipientId],
+    queryFn: () => getUserProfile(recipientId!),
+    enabled: !!recipientId,
+  });
+
+  // Effect to set the default selected skill once the profile is loaded
   useEffect(() => {
-    if (recipientId) {
-      const fetchRecipientProfile = async () => {
-        try {
-          const profile = await getUserProfile(recipientId);
-          setRecipientProfile(profile);
-          if (profile?.skillsToTeach && profile.skillsToTeach.length > 0) {
-            setSelectedSkillName(profile.skillsToTeach[0].skillName);
-          }
-        } catch (error) {
-          console.error("Failed to fetch recipient profile:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchRecipientProfile();
+    if (recipientProfile?.skillsToTeach && recipientProfile.skillsToTeach.length > 0) {
+      setSelectedSkillName(recipientProfile.skillsToTeach[0].skillName);
     }
-  }, [recipientId]);
+  }, [recipientProfile]);
 
-  const handleSendProposal = async () => {
-    if (
-      !currentUser ||
-      !recipientId ||
-      !selectedSkillName ||
-      !recipientProfile
-    ) {
-      Alert.alert(
-        "Erro",
-        "Não foi possível enviar a proposta. Tente novamente."
+  // 2. Mutation to create the proposal
+  const { mutate: sendProposal, isPending: isSubmitting } = useMutation({
+    mutationFn: async () => {
+      if (!currentUser || !recipientId || !selectedSkillName || !recipientProfile) {
+        throw new Error("Informações insuficientes para enviar a proposta.");
+      }
+      const selectedSkill = recipientProfile.skillsToTeach.find(
+        (s) => s.skillName === selectedSkillName
       );
-      return;
-    }
+      if (!selectedSkill) {
+        throw new Error("Habilidade selecionada não é válida.");
+      }
 
-    const selectedSkill = recipientProfile.skillsToTeach.find(
-      (s) => s.skillName === selectedSkillName
-    );
+      const proposalData = {
+        proposerId: currentUser.uid,
+        recipientId: recipientId,
+        skillName: selectedSkill.skillName,
+        proposedDuration: 60, // Hardcoded for now
+        costInMinutes: 60 * selectedSkill.multiplier,
+      };
 
-    if (!selectedSkill) {
-      Alert.alert("Erro", "Habilidade selecionada não é válida.");
-      return;
-    }
-
-    const proposedDuration = 60; // Hardcoded for now, can be a form field later
-    const costInMinutes = proposedDuration * selectedSkill.multiplier;
-
-    const proposalData = {
-      proposerId: currentUser.uid,
-      recipientId: recipientId,
-      skillName: selectedSkill.skillName,
-      proposedDuration,
-      costInMinutes,
-    };
-
-    try {
       await createProposal(proposalData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["proposals", currentUser?.uid] });
       Alert.alert("Sucesso", "Sua proposta foi enviada!");
       router.back();
-    } catch (error) {
+    },
+    onError: (error: Error) => {
       console.error("Failed to create proposal:", error);
-      Alert.alert("Erro", "Ocorreu um erro ao enviar sua proposta.");
-    }
-  };
+      Alert.alert("Erro", error.message || "Ocorreu um erro ao enviar sua proposta.");
+    },
+  });
 
   if (isLoading) {
     return (
@@ -108,7 +92,8 @@ export default function ProposeTradeScreen() {
         recipientProfile={recipientProfile}
         selectedSkillName={selectedSkillName}
         setSelectedSkillName={setSelectedSkillName}
-        onSendProposal={handleSendProposal}
+        onSendProposal={sendProposal}
+        isSubmitting={isSubmitting}
       />
     </View>
   );

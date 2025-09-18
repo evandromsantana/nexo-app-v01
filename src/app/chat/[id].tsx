@@ -1,11 +1,11 @@
 import { COLORS } from "@/constants";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { IMessage } from "react-native-gifted-chat";
-import { ActivityIndicator, StyleSheet } from "react-native";
-
 import { getMessagesForChat, sendMessage } from "../../api/firestore";
-import { useAuth } from "../../hooks/useAuth";
 import ChatRoom from "../../components/app/chat/ChatRoom";
 
 export default function ChatRoomScreen() {
@@ -14,6 +14,7 @@ export default function ChatRoomScreen() {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Real-time listener for messages - useEffect is a good pattern for this.
   useEffect(() => {
     if (chatId) {
       const unsubscribe = getMessagesForChat(chatId, (messages) => {
@@ -24,21 +25,29 @@ export default function ChatRoomScreen() {
       // Cleanup subscription on unmount
       return () => unsubscribe();
     }
-  }, [chatId]);
+  }, [chatId, isLoading]);
 
-  const onSend = useCallback(
-    (newMessages: IMessage[] = []) => {
-      if (chatId && user) {
-        const text = newMessages[0].text;
-        sendMessage(chatId, user.uid, text);
-      }
+  // Mutation for sending a message
+  const { mutate: send } = useMutation({
+    mutationFn: ({ text }: { text: string }) => {
+      if (!chatId || !user) throw new Error("Chat ID or user not found");
+      return sendMessage(chatId, user.uid, text);
     },
-    [chatId, user]
-  );
+    onError: (error) => {
+      console.error("Failed to send message:", error);
+      // Here you could add UI feedback, like an alert
+    },
+  });
+
+  const onSend = (newMessages: IMessage[] = []) => {
+    const text = newMessages[0].text;
+    send({ text });
+  };
 
   if (isLoading) {
     return (
       <ActivityIndicator
+        style={{ flex: 1 }}
         size="large"
         color={COLORS.primary}
       />

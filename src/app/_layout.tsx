@@ -3,6 +3,10 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { AuthProvider } from '../contexts/AuthContext';
 import { useAuth } from '../hooks/useAuth';
 import { SplashScreen } from 'expo-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a client
+const queryClient = new QueryClient();
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -35,8 +39,10 @@ const InitialLayout = () => {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <InitialLayout />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <InitialLayout />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

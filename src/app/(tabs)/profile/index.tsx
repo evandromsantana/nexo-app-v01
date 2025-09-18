@@ -1,5 +1,5 @@
-import { useFocusEffect } from "expo-router";
-import React, { useCallback, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -11,51 +11,22 @@ import {
 import { getUserProfile } from "@/api/firestore";
 import { COLORS } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
-import { UserProfile } from "@/types/user";
 import ProfileActions from "../../../components/app/profile/ProfileActions";
 import ProfileHeader from "../../../components/app/profile/ProfileHeader";
 import ProfileInfoBox from "../../../components/app/profile/ProfileInfoBox";
 
-// Definimos um tipo local para o perfil que corresponde ao retorno da API.
-// Este tipo garante que `photoUrl` é `string | undefined`.
-type ProfileState =
-  | (Omit<UserProfile, "photoUrl"> & { photoUrl: string | undefined })
-  | null;
-
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-  // Usamos o novo tipo para o estado do perfil.
-  const [userProfile, setUserProfile] = useState<ProfileState>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (user) {
-        const fetchProfile = async () => {
-          try {
-            const profile = await getUserProfile(user.uid);
-
-            // ✅ CORREÇÃO: Garantimos a conversão do tipo antes de definir o estado.
-            // Isso resolve a incompatibilidade mesmo que a inferência de tipo falhe.
-            if (profile) {
-              const correctlyTypedProfile = {
-                ...profile,
-                photoUrl: profile.photoUrl ?? undefined,
-              };
-              setUserProfile(correctlyTypedProfile);
-            } else {
-              setUserProfile(null);
-            }
-          } catch (error) {
-            console.error("Failed to fetch user profile:", error);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-        fetchProfile();
-      }
-    }, [user])
-  );
+  const {
+    data: userProfile,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["userProfile", user?.uid],
+    queryFn: () => getUserProfile(user!.uid),
+    enabled: !!user, // Apenas executa a query se o utilizador existir
+  });
 
   if (isLoading) {
     return (
@@ -65,10 +36,10 @@ export default function ProfileScreen() {
     );
   }
 
-  if (!userProfile) {
+  if (isError || !userProfile) {
     return (
       <View style={styles.centered}>
-        <Text>Perfil não encontrado.</Text>
+        <Text>Perfil não encontrado ou erro ao carregar.</Text>
       </View>
     );
   }
@@ -76,9 +47,8 @@ export default function ProfileScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Agora isto funciona porque `userProfile.photoUrl` é `string | undefined` */}
         <ProfileHeader
-          photoUrl={userProfile.photoUrl}
+          photoUrl={userProfile.photoUrl ?? undefined}
           displayName={userProfile.displayName}
           email={userProfile.email || undefined}
         />
@@ -131,3 +101,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
+
