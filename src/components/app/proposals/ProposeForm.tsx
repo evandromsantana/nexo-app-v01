@@ -9,6 +9,7 @@ interface ProposeFormProps {
   selectedSkillName: string | null;
   setSelectedSkillName: (skillName: string | null) => void;
   onSendProposal: () => void;
+  isSubmitting: boolean; // Added this prop
 }
 
 const ProposeForm: React.FC<ProposeFormProps> = ({
@@ -16,6 +17,7 @@ const ProposeForm: React.FC<ProposeFormProps> = ({
   selectedSkillName,
   setSelectedSkillName,
   onSendProposal,
+  isSubmitting,
 }) => {
   return (
     <View style={styles.container}>
@@ -32,7 +34,7 @@ const ProposeForm: React.FC<ProposeFormProps> = ({
           {recipientProfile?.skillsToTeach.map((skill) => (
             <Picker.Item
               key={skill.skillName}
-              label={`${skill.skillName} (Custo: ${60 * skill.multiplier} min)`}
+              label={`${skill.skillName} (Custo: ${60 * (skill.multiplier || 1)} min)`}
               value={skill.skillName}
             />
           ))}
@@ -42,7 +44,7 @@ const ProposeForm: React.FC<ProposeFormProps> = ({
       <Button
         title="Enviar Proposta"
         onPress={onSendProposal}
-        disabled={!selectedSkillName}
+        disabled={!selectedSkillName || isSubmitting}
       />
     </View>
   );

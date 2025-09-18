@@ -16,8 +16,8 @@ service cloud.firestore {
       // Permite criar se o usuário estiver autenticado
       allow create: if request.auth != null;
       
-      // Permite ATUALIZAR (aceitar/recusar) apenas se for o DESTINATÁRIO da proposta
-      allow update: if request.auth.uid == resource.data.recipientId;
+      // Permite ATUALIZAR (aceitar/recusar/cancelar) se for o DESTINATÁRIO ou o PROPONENTE da proposta
+      allow update: if request.auth != null && (request.auth.uid == resource.data.recipientId || request.auth.uid == resource.data.proposerId);
       
       // Nega a exclusão por qualquer pessoa para manter o histórico
       allow delete: if false;

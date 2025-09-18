@@ -23,36 +23,48 @@ export default function ProposeTradeScreen() {
   // 1. Query to fetch recipient's profile
   const { data: recipientProfile, isLoading } = useQuery<UserProfile | null, Error>({ 
     queryKey: ["userProfile", recipientId],
-    queryFn: () => getUserProfile(recipientId!),
+    queryFn: async () => {
+      if (typeof recipientId === 'string') {
+        return getUserProfile(recipientId);
+      }
+      throw new Error("Recipient ID is missing or invalid.");
+    },
     enabled: !!recipientId,
   });
 
   // Effect to set the default selected skill once the profile is loaded
   useEffect(() => {
     if (recipientProfile?.skillsToTeach && recipientProfile.skillsToTeach.length > 0) {
-      setSelectedSkillName(recipientProfile.skillsToTeach[0].skillName);
+      const firstSkillName = recipientProfile.skillsToTeach[0].skillName;
+      if (typeof firstSkillName === 'string') {
+        setSelectedSkillName(firstSkillName);
+      } else {
+        setSelectedSkillName(null); // Or handle as appropriate if skillName is undefined
+      }
     }
   }, [recipientProfile]);
 
   // 2. Mutation to create the proposal
   const { mutate: sendProposal, isPending: isSubmitting } = useMutation({
     mutationFn: async () => {
-      if (!currentUser || !recipientId || !selectedSkillName || !recipientProfile) {
+      if (!currentUser || !recipientId || !selectedSkillName || !recipientProfile || !recipientProfile.skillsToTeach) {
         throw new Error("Informações insuficientes para enviar a proposta.");
       }
       const selectedSkill = recipientProfile.skillsToTeach.find(
         (s) => s.skillName === selectedSkillName
       );
-      if (!selectedSkill) {
-        throw new Error("Habilidade selecionada não é válida.");
+      if (!selectedSkill || typeof selectedSkill.skillName !== 'string') {
+        throw new Error("Habilidade selecionada não é válida ou não possui um nome.");
       }
+
+      const costInMinutes = 60 * (selectedSkill.multiplier || 1); // Use 1 as default if multiplier is undefined
 
       const proposalData = {
         proposerId: currentUser.uid,
         recipientId: recipientId,
         skillName: selectedSkill.skillName,
         proposedDuration: 60, // Hardcoded for now
-        costInMinutes: 60 * selectedSkill.multiplier,
+        costInMinutes: costInMinutes,
       };
 
       await createProposal(proposalData);

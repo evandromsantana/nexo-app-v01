@@ -1,10 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Region } from "react-native-maps";
 import Supercluster from "supercluster";
 
+import { COLORS } from "@/constants/Colors";
 import { getUsers, updateUserLocation } from "../../api/firestore";
 import MapComponent, {
   ClusterItem,
@@ -23,7 +30,11 @@ export default function HomeScreen() {
   const [locationLoading, setLocationLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  const [selectedCluster, setSelectedCluster] = useState<{ clusterId: number; pointCount: number; coordinates: [number, number] } | null>(null);
+  const [selectedCluster, setSelectedCluster] = useState<{
+    clusterId: number;
+    pointCount: number;
+    coordinates: [number, number];
+  } | null>(null);
   const [clusterUsers, setClusterUsers] = useState<UserProfile[]>([]);
 
   // Get user location
@@ -47,7 +58,11 @@ export default function HomeScreen() {
   }, [user]);
 
   // Load other users with React Query
-  const { data: users = [], isLoading: isUsersLoading } = useQuery<UserProfile[], Error, UserProfile[]>({ 
+  const { data: users = [], isLoading: isUsersLoading } = useQuery<
+    UserProfile[],
+    Error,
+    UserProfile[]
+  >({
     queryKey: ["users"],
     queryFn: getUsers,
     enabled: !!user,
@@ -61,8 +76,9 @@ export default function HomeScreen() {
     return users.filter(
       (u) =>
         u.displayName.toLowerCase().includes(s) ||
-        (u.skillsToTeach || []).some((skill) =>
-          skill.skillName && skill.skillName.toLowerCase().includes(s)
+        (u.skillsToTeach || []).some(
+          (skill) =>
+            skill.skillName && skill.skillName.toLowerCase().includes(s)
         ) ||
         (u.skillsToLearn || []).some((skill) => skill.toLowerCase().includes(s))
     );
@@ -73,8 +89,7 @@ export default function HomeScreen() {
     const points: PointFeature[] = [];
     const locationsMap = new Map<string, UserProfile[]>();
 
-    // Group users by exact location
-    filteredUsers.forEach(u => {
+    filteredUsers.forEach((u) => {
       if (u.location) {
         const key = `${u.location.latitude},${u.location.longitude}`;
         if (!locationsMap.has(key)) {
@@ -84,8 +99,7 @@ export default function HomeScreen() {
       }
     });
 
-    // Apply jitter to duplicate locations and create PointFeatures
-    locationsMap.forEach(usersAtLocation => {
+    locationsMap.forEach((usersAtLocation) => {
       if (usersAtLocation.length === 1) {
         const u = usersAtLocation[0];
         points.push({
@@ -100,10 +114,9 @@ export default function HomeScreen() {
           },
         });
       } else {
-        // Apply jitter for multiple users at the same exact location
         usersAtLocation.forEach((u, index) => {
-          const jitter = 0.00005 * (index + 1); // Small, unique offset
-          const sign = index % 2 === 0 ? 1 : -1; // Alternate direction
+          const jitter = 0.00005 * (index + 1);
+          const sign = index % 2 === 0 ? 1 : -1;
           points.push({
             type: "Feature",
             properties: { user: u },
@@ -139,13 +152,28 @@ export default function HomeScreen() {
     ) as ClusterItem[];
   }, [clusterIndex, region]);
 
-  const handleClusterPress = (clusterId: number, pointCount: number, coordinates: [number, number]) => {
+  const handleClusterPress = (
+    clusterId: number,
+    pointCount: number,
+    coordinates: [number, number]
+  ) => {
     const leaves = (clusterIndex as any).getLeaves(clusterId, pointCount);
-    const usersInCluster = leaves.map((leaf: PointFeature) => (leaf.properties as { user: UserProfile }).user);
+    const usersInCluster = leaves.map(
+      (leaf: PointFeature) => (leaf.properties as { user: UserProfile }).user
+    );
     setSelectedCluster({ clusterId, pointCount, coordinates });
     setClusterUsers(usersInCluster);
-    // Optionally zoom to the cluster location
-    setRegion(prev => prev ? { ...prev, latitude: coordinates[1], longitude: coordinates[0], latitudeDelta: prev.latitudeDelta / 2, longitudeDelta: prev.longitudeDelta / 2 } : null);
+    setRegion((prev) =>
+      prev
+        ? {
+            ...prev,
+            latitude: coordinates[1],
+            longitude: coordinates[0],
+            latitudeDelta: prev.latitudeDelta / 2,
+            longitudeDelta: prev.longitudeDelta / 2,
+          }
+        : null
+    );
   };
 
   const handleMapPress = () => {
@@ -172,29 +200,35 @@ export default function HomeScreen() {
       <MapSearchInput search={search} setSearch={setSearch} />
 
       {selectedUser && (
-        <UserInfoCard
-          user={selectedUser}
-          onClose={handleMapPress}
-        />
+        <UserInfoCard user={selectedUser} onClose={handleMapPress} />
       )}
 
       {selectedCluster && clusterUsers.length > 0 && (
-        <View style={styles.bottomSheetPlaceholder}>
-          <Text style={styles.bottomSheetTitle}>Usuários no Cluster ({selectedCluster.pointCount})</Text>
-          {clusterUsers.map(u => (
-            <View key={u.uid} style={styles.bottomSheetItem}>
-              <Text>{u.displayName}</Text>
-              <TouchableOpacity onPress={() => {
-                setSelectedUser(u);
-                setSelectedCluster(null);
-                setClusterUsers([]);
-              }}>
-                <Text>Ver Perfil</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-          <TouchableOpacity onPress={handleMapPress}>
-            <Text style={styles.closeButton}>Fechar</Text>
+        <View style={styles.bottomSheet}>
+          <View style={styles.handleBar} />
+          <Text style={styles.bottomSheetTitle}>
+            👥 Usuários próximos ({selectedCluster.pointCount})
+          </Text>
+
+          <ScrollView style={styles.userList}>
+            {clusterUsers.map((u) => (
+              <View key={u.uid} style={styles.userCard}>
+                <Text style={styles.userName}>{u.displayName}</Text>
+                <TouchableOpacity
+                  style={styles.profileButton}
+                  onPress={() => {
+                    setSelectedUser(u);
+                    setSelectedCluster(null);
+                    setClusterUsers([]);
+                  }}>
+                  <Text style={styles.profileButtonText}>Ver Perfil</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+
+          <TouchableOpacity style={styles.closeButton} onPress={handleMapPress}>
+            <Text style={styles.closeButtonText}>Fechar</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -203,38 +237,74 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  bottomSheetPlaceholder: {
-    position: 'absolute',
+  container: { flex: 1, backgroundColor: COLORS.background },
+
+  bottomSheet: {
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'white',
+    backgroundColor: COLORS.card,
     padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+    maxHeight: "55%",
+  },
+  handleBar: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: COLORS.gray,
+    alignSelf: "center",
+    marginBottom: 10,
   },
   bottomSheetTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
+    color: COLORS.textPrimary,
   },
-  bottomSheetItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
+  userList: {
+    marginBottom: 15,
+  },
+  userCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: COLORS.grayLight,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: COLORS.textSecondary,
+  },
+  profileButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  profileButtonText: {
+    color: COLORS.white,
+    fontWeight: "600",
   },
   closeButton: {
-    marginTop: 15,
-    color: 'blue',
-    textAlign: 'center',
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: COLORS.grayLight,
+    borderRadius: 12,
+  },
+  closeButtonText: {
+    textAlign: "center",
+    color: COLORS.black,
+    fontWeight: "500",
   },
 });

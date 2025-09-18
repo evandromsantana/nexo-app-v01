@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -10,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { ProposalSchema, ProposalStatus, ProposalWithIdSchema } from '../../types/proposal';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 import { createChatRoom } from './chat'; // Importar a função para criar chat
 
 // Schema para criar uma nova proposta, omitindo campos gerados pelo servidor
@@ -85,10 +86,35 @@ export const getProposalsForUser = async (uid: string) => {
 export const updateProposalStatus = async (
     proposalId: string,
     status: ProposalStatus,
-    proposerId: string,
-    recipientId: string
+    // proposerId e recipientId não são mais necessários aqui, pois serão lidos do documento
 ) => {
+    const currentUserUid = auth.currentUser?.uid;
+    if (!currentUserUid) {
+        console.error("Erro: Utilizador não autenticado.");
+        throw new Error("Utilizador não autenticado.");
+    }
+
     const proposalRef = doc(db, 'proposals', proposalId);
+    const docSnap = await getDoc(proposalRef);
+
+    if (!docSnap.exists()) {
+        console.error(`Erro: Proposta com ID ${proposalId} não encontrada.`);
+        throw new Error(`Proposta com ID ${proposalId} não encontrada.`);
+    }
+
+    const proposalData = docSnap.data();
+    const { proposerId, recipientId } = proposalData;
+
+    console.log(`Tentando atualizar proposta ${proposalId}:`);
+    console.log(`  Current User UID: ${currentUserUid}`);
+    console.log(`  Proposer ID (from doc): ${proposerId}`);
+    console.log(`  Recipient ID (from doc): ${recipientId}`);
+
+    if (currentUserUid !== proposerId && currentUserUid !== recipientId) {
+        console.error("Erro de permissão: O utilizador atual não é o proponente nem o destinatário da proposta.");
+        throw new Error("Permissão insuficiente para atualizar esta proposta.");
+    }
+
     await updateDoc(proposalRef, {
         status: status,
         updatedAt: serverTimestamp(),
