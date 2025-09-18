@@ -4,24 +4,20 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 
 import { COLORS } from "@/constants";
 import { uploadImage } from "../../../api/cloudinary";
 import { getUserProfile, updateUserProfile } from "../../../api/firestore";
-import { useAuth } from "../../../hooks/useAuth";
-import { TaughtSkill, UserProfile } from "../../../types/user";
 import ProfileImagePicker from "../../../components/app/profile/ProfileImagePicker";
 import ProfileInputField from "../../../components/app/profile/ProfileInputField";
-import SkillsToTeachEditor from "../../../components/app/profile/SkillsToTeachEditor";
 import ProfileSaveButton from "../../../components/app/profile/ProfileSaveButton";
+import SkillsToTeachEditor from "../../../components/app/profile/SkillsToTeachEditor";
+import { useAuth } from "../../../hooks/useAuth";
+import { TaughtSkill, UserProfile } from "../../../types/user";
 
 // Use a local interface for the form state to handle the multiplier as a string
 interface EditableTaughtSkill {
@@ -191,9 +187,19 @@ const EditProfileScreen = () => {
       contentContainerStyle={{ paddingBottom: 50 }}>
       <ProfileImagePicker imageUri={imageUri} onPickImage={handlePickImage} />
 
-      <ProfileInputField label="Nome" value={displayName} onChangeText={setDisplayName} />
+      <ProfileInputField
+        label="Nome"
+        value={displayName}
+        onChangeText={setDisplayName}
+      />
 
-      <ProfileInputField label="Sobre mim" value={bio} onChangeText={setBio} multiline textArea />
+      <ProfileInputField
+        label="Sobre mim"
+        value={bio}
+        onChangeText={setBio}
+        multiline
+        textArea
+      />
 
       <SkillsToTeachEditor
         skillsToTeach={skillsToTeach}
@@ -225,10 +231,6 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: COLORS.background || "#f5f5f5",
   },
-  
-  
-  
-  
 });
 
 export default EditProfileScreen;

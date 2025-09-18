@@ -3,6 +3,7 @@ import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   User as FirebaseUser,
+  getReactNativePersistence,
   onAuthStateChanged,
   setPersistence,
   signInWithEmailAndPassword,
@@ -11,7 +12,6 @@ import {
 import React, { createContext, ReactNode, useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { auth } from "../api/firebase";
-
 import { createUserProfile } from "../api/firestore";
 
 type User = FirebaseUser;
@@ -45,7 +45,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (Platform.OS === "web") {
         await setPersistence(auth, browserLocalPersistence);
       } else {
-        await setPersistence(auth, ReactNativeAsyncStorage as any);
+        await setPersistence(
+          auth,
+          getReactNativePersistence(ReactNativeAsyncStorage)
+        );
       }
       const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
         setUser(firebaseUser);

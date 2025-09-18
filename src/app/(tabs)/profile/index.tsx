@@ -1,12 +1,10 @@
-import { Link, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -14,13 +12,20 @@ import { getUserProfile } from "@/api/firestore";
 import { COLORS } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
 import { UserProfile } from "@/types/user";
+import ProfileActions from "../../../components/app/profile/ProfileActions";
 import ProfileHeader from "../../../components/app/profile/ProfileHeader";
 import ProfileInfoBox from "../../../components/app/profile/ProfileInfoBox";
-import ProfileActions from "../../../components/app/profile/ProfileActions";
+
+// Definimos um tipo local para o perfil que corresponde ao retorno da API.
+// Este tipo garante que `photoUrl` é `string | undefined`.
+type ProfileState =
+  | (Omit<UserProfile, "photoUrl"> & { photoUrl: string | undefined })
+  | null;
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null) as [UserProfile | null, React.Dispatch<React.SetStateAction<UserProfile | null>>];
+  // Usamos o novo tipo para o estado do perfil.
+  const [userProfile, setUserProfile] = useState<ProfileState>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useFocusEffect(
@@ -28,13 +33,23 @@ export default function ProfileScreen() {
       if (user) {
         const fetchProfile = async () => {
           try {
-            // No need to set loading to true here as it might cause a flicker
             const profile = await getUserProfile(user.uid);
-            setUserProfile(profile);
+
+            // ✅ CORREÇÃO: Garantimos a conversão do tipo antes de definir o estado.
+            // Isso resolve a incompatibilidade mesmo que a inferência de tipo falhe.
+            if (profile) {
+              const correctlyTypedProfile = {
+                ...profile,
+                photoUrl: profile.photoUrl ?? undefined,
+              };
+              setUserProfile(correctlyTypedProfile);
+            } else {
+              setUserProfile(null);
+            }
           } catch (error) {
             console.error("Failed to fetch user profile:", error);
           } finally {
-            setIsLoading(false); // Set loading to false after the first fetch
+            setIsLoading(false);
           }
         };
         fetchProfile();
@@ -61,11 +76,22 @@ export default function ProfileScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
-        <ProfileHeader photoUrl={userProfile.photoUrl} displayName={userProfile.displayName} email={userProfile.email || undefined} />
+        {/* Agora isto funciona porque `userProfile.photoUrl` é `string | undefined` */}
+        <ProfileHeader
+          photoUrl={userProfile.photoUrl}
+          displayName={userProfile.displayName}
+          email={userProfile.email || undefined}
+        />
 
-        <ProfileInfoBox title="Saldo de Tempo" content={`${userProfile?.timeBalance || 0} minutos`} />
+        <ProfileInfoBox
+          title="Saldo de Tempo"
+          content={`${userProfile?.timeBalance || 0} minutos`}
+        />
 
-        <ProfileInfoBox title="Bio" content={userProfile?.bio || "Nenhuma bio definida."} />
+        <ProfileInfoBox
+          title="Bio"
+          content={userProfile?.bio || "Nenhuma bio definida."}
+        />
 
         <ProfileInfoBox
           title="Habilidades para ensinar"
@@ -104,6 +130,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  
-  
 });
