@@ -79,7 +79,7 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
         });
       } else {
         setFeedback({
-          message: `Custo da aula: ${cost} min.`,
+          message: `Custo aula: ${cost} min.`,
           color: COLORS.success,
         });
       }
@@ -98,13 +98,18 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
       if (!currentUserProfile || currentUserProfile.timeBalance < cost) {
         throw new Error("Saldo de tempo insuficiente.");
       }
-      await createProposal({
+      const proposalPayload = {
         proposerId: currentUser.uid,
         recipientId: recipientUser.uid,
         skillName: selectedSkill.skillName,
         proposedDuration: 60,
         costInMinutes: cost,
-      });
+      };
+
+      // Explicitly remove 'id' if it somehow exists, as CreateProposalSchema does not expect it.
+      const { id, ...finalPayload } = proposalPayload as any;
+
+      await createProposal(finalPayload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -151,6 +156,7 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
             <Text style={styles.cardName} numberOfLines={1}>
               {recipientUser.displayName}
             </Text>
+
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={toggleCard}
@@ -174,9 +180,22 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
               style={styles.expandedContent}>
               {recipientUser.skillsToTeach?.length > 0 ? (
                 <>
-                  <Text style={styles.cardSectionTitle}>
-                    Selecione uma habilidade para propor a troca
-                  </Text>
+                  <View style={styles.skillContainer}>
+                    <Text style={styles.cardSectionTitle}>
+                      Selecionar habilidade:
+                    </Text>
+
+                    {feedback && (
+                      <Text
+                        style={[
+                          styles.feedbackText,
+                          { color: feedback.color },
+                        ]}>
+                        {feedback.message}
+                      </Text>
+                    )}
+                  </View>
+
                   <View style={styles.skillContainer}>
                     {recipientUser.skillsToTeach.map((skill, i) => (
                       <SkillTag
@@ -189,12 +208,6 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
                       />
                     ))}
                   </View>
-                  {feedback && (
-                    <Text
-                      style={[styles.feedbackText, { color: feedback.color }]}>
-                      {feedback.message}
-                    </Text>
-                  )}
                 </>
               ) : (
                 <Text style={styles.feedbackText}>
@@ -232,9 +245,16 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
 };
 
 const styles = StyleSheet.create({
-  overlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 12 },
+  overlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+    backgroundColor: "transparent",
+  },
   cardContainer: {
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.background,
     borderRadius: 20,
     padding: 12,
     shadowColor: COLORS.black,
@@ -281,6 +301,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
     marginBottom: 8,
+    justifyContent: "space-between",
   },
   skillTag: {
     backgroundColor: COLORS.grayLight,

@@ -15,7 +15,6 @@ import { createChatRoom } from './chat'; // Importar a função para criar chat
 
 // Schema para criar uma nova proposta, omitindo campos gerados pelo servidor
 const CreateProposalSchema = ProposalSchema.omit({
-    id: true,
     createdAt: true,
     updatedAt: true,
     status: true
