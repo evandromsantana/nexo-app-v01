@@ -20,6 +20,7 @@ const ProposalCard = ({
   userProfiles,
   currentUserId,
   currentUserProfile,
+  isUpdatingProposal, // Added this prop
 }: {
   proposal: ProposalWithId;
   type: "received" | "sent";
@@ -34,6 +35,7 @@ const ProposalCard = ({
   userProfiles: Record<string, UserProfile>;
   currentUserId: string | undefined;
   currentUserProfile: UserProfile | null | undefined;
+  isUpdatingProposal: boolean; // Added this prop
 }) => {
   const otherUserId =
     type === "received" ? proposal.proposerId : proposal.recipientId;
@@ -97,7 +99,7 @@ const ProposalCard = ({
               ? `De: ${otherUser?.displayName || "..."}`
               : `Para: ${otherUser?.displayName || "..."}`}
           </Text>
-          <Text style={styles.cardSkill}>Habilidade: {proposal.skillName}</Text>
+          <Text style={styles.cardSkill}>Habilidade: {String(proposal.skillName)}</Text>
         </View>
       </View>
 
@@ -107,10 +109,10 @@ const ProposalCard = ({
           ? proposal.createdAt.toDate().toLocaleDateString("pt-BR")
           : "..."}
       </Text>
-      <Text style={styles.cardStatus}>Status: {proposal.status}</Text>
+      <Text style={styles.cardStatus}>Status: {String(proposal.status)}</Text>
       {balanceMessage ? (
         <Text style={[styles.balanceText, { color: balanceColor }]}>
-          {balanceMessage}
+          {String(balanceMessage)}
         </Text>
       ) : null}
 
@@ -119,12 +121,14 @@ const ProposalCard = ({
           <View style={styles.buttonGroup}>
             <Pressable
               style={[styles.button, styles.buttonAccept]}
-              onPress={() => handleUpdate("accepted")}>
+              onPress={() => handleUpdate("accepted")}
+              disabled={isUpdatingProposal}> // Added disabled prop
               <Text style={styles.buttonText}>Aceitar</Text>
             </Pressable>
             <Pressable
               style={[styles.button, styles.buttonDecline]}
-              onPress={() => handleUpdate("declined")}>
+              onPress={() => handleUpdate("declined")}
+              disabled={isUpdatingProposal}> // Added disabled prop
               <Text style={styles.buttonText}>Recusar</Text>
             </Pressable>
           </View>
@@ -143,7 +147,8 @@ const ProposalCard = ({
         proposal.proposerId === currentUserId && (
           <Pressable
             style={[styles.button, styles.buttonComplete]}
-            onPress={() => handleUpdate("completed")}>
+            onPress={() => handleUpdate("completed")}
+            disabled={isUpdatingProposal}> // Added disabled prop
             <Text style={styles.buttonText}>Marcar como Concluída</Text>
           </Pressable>
         )}
@@ -169,6 +174,7 @@ interface ProposalListProps {
   onRefresh: () => void;
   refreshing: boolean;
   emptyMessage: string;
+  isUpdatingProposal: boolean; // Added this prop
 }
 
 const ProposalList: React.FC<ProposalListProps> = ({
@@ -182,6 +188,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
   onRefresh,
   refreshing,
   emptyMessage,
+  isUpdatingProposal, // Added this prop
 }) => {
   return (
     <>
@@ -197,6 +204,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
             userProfiles={userProfiles}
             currentUserId={currentUserId}
             currentUserProfile={currentUserProfile}
+            isUpdatingProposal={isUpdatingProposal} // Added this prop
           />
         )}
         ListEmptyComponent={

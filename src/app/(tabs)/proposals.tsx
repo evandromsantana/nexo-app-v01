@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { UserProfile } from "@/types/user";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getProposalsForUser, updateProposalStatus } from "../../api/firestore/proposal";
 import { fetchUserProfiles, getUserProfile } from "../../api/firestore/user";
 import ProposalList from "../../components/app/proposals/ProposalList";
@@ -50,7 +50,7 @@ export default function ProposalsScreen() {
   });
 
   // 3. Mutation to update proposal status
-  const { mutate: handleUpdateStatus } = useMutation({
+  const { mutate: handleUpdateStatus, isPending: isUpdatingProposal } = useMutation({
     mutationFn: (variables: {
       proposalId: string;
       status: "accepted" | "declined" | "completed";
@@ -59,16 +59,15 @@ export default function ProposalsScreen() {
     }) =>
       updateProposalStatus(
         variables.proposalId,
-        variables.status,
-        variables.proposerId,
-        variables.recipientId
+        variables.status
       ),
     onSuccess: () => {
-      // When mutation is successful, invalidate the proposals query to refetch
       queryClient.invalidateQueries({ queryKey: ["proposals", user?.uid] });
+      Alert.alert("Sucesso", "Status da proposta atualizado com sucesso!");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Failed to update proposal status:", error);
+      Alert.alert("Erro", error.message || "Não foi possível atualizar o status da proposta.");
     },
   });
 
@@ -126,6 +125,7 @@ export default function ProposalsScreen() {
         onRefresh={refetchProposals}
         refreshing={isRefetching}
         emptyMessage={emptyMessage}
+        isUpdatingProposal={isUpdatingProposal} // Added this prop
       />
     </View>
   );
