@@ -1,8 +1,9 @@
 import React, { useCallback } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
-import Supercluster from "supercluster";
+
 import { COLORS } from "@/constants";
+import { retroMapStyle } from "@/constants/MapStyles";
 import { UserProfile } from "../../../types/user"; // Importar UserProfile
 
 // --- TYPE DEFINITIONS ---
@@ -28,7 +29,11 @@ interface MapComponentProps {
   setRegion: (region: Region) => void;
   clusters: ClusterItem[];
   onMarkerPress: (user: UserProfile) => void;
-  onClusterPress: (clusterId: number, pointCount: number, coordinates: [number, number]) => void;
+  onClusterPress: (
+    clusterId: number,
+    pointCount: number,
+    coordinates: [number, number]
+  ) => void;
   onMapPress: () => void;
 }
 
@@ -40,62 +45,64 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onClusterPress,
   onMapPress,
 }) => {
-  const renderMarker = useCallback((feature: ClusterItem) => {
-    if ("cluster" in feature.properties) {
-      const clusterProps = feature.properties as ClusterFeature['properties'];
-      return (
-        <Marker
-          key={`cluster-${clusterProps.cluster_id}`}
-          coordinate={{
-            latitude: feature.geometry.coordinates[1],
-            longitude: feature.geometry.coordinates[0],
-          }}
-          onPress={(e) => {
-            e.stopPropagation();
-            onClusterPress(
-              clusterProps.cluster_id,
-              clusterProps.point_count,
-              feature.geometry.coordinates as [number, number]
-            );
-          }}
-        >
-          <View style={styles.cluster}>
-            <Text style={styles.clusterText}>
-              {feature.properties.point_count}
-            </Text>
-          </View>
-        </Marker>
-      );
-    } else {
-      const { user } = feature.properties;
-      const photo = user.photoUrl ? { uri: user.photoUrl } : undefined;
-      const initials = user.displayName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase();
-      return (
-        <Marker
-          key={user.uid}
-          coordinate={{
-            latitude: feature.geometry.coordinates[1],
-            longitude: feature.geometry.coordinates[0],
-          }}
-          onPress={(e) => {
-            e.stopPropagation(); // Prevent map press from firing
-            onMarkerPress(user);
-          }}>
-          <View style={styles.avatarMarker}>
-            {photo ? (
-              <Image source={photo} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.avatarInitials}>{initials}</Text>
-            )}
-          </View>
-        </Marker>
-      );
-    }
-  }, [onMarkerPress, onClusterPress]);
+  const renderMarker = useCallback(
+    (feature: ClusterItem) => {
+      if ("cluster" in feature.properties) {
+        const clusterProps = feature.properties as ClusterFeature["properties"];
+        return (
+          <Marker
+            key={`cluster-${clusterProps.cluster_id}`}
+            coordinate={{
+              latitude: feature.geometry.coordinates[1],
+              longitude: feature.geometry.coordinates[0],
+            }}
+            onPress={(e) => {
+              e.stopPropagation();
+              onClusterPress(
+                clusterProps.cluster_id,
+                clusterProps.point_count,
+                feature.geometry.coordinates as [number, number]
+              );
+            }}>
+            <View style={styles.cluster}>
+              <Text style={styles.clusterText}>
+                {feature.properties.point_count}
+              </Text>
+            </View>
+          </Marker>
+        );
+      } else {
+        const { user } = feature.properties;
+        const photo = user.photoUrl ? { uri: user.photoUrl } : undefined;
+        const initials = user.displayName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase();
+        return (
+          <Marker
+            key={user.uid}
+            coordinate={{
+              latitude: feature.geometry.coordinates[1],
+              longitude: feature.geometry.coordinates[0],
+            }}
+            onPress={(e) => {
+              e.stopPropagation(); // Prevent map press from firing
+              onMarkerPress(user);
+            }}>
+            <View style={styles.avatarMarker}>
+              {photo ? (
+                <Image source={photo} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarInitials}>{initials}</Text>
+              )}
+            </View>
+          </Marker>
+        );
+      }
+    },
+    [onMarkerPress, onClusterPress]
+  );
 
   return (
     <MapView
@@ -104,7 +111,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       region={region || undefined}
       onRegionChangeComplete={setRegion}
       onPress={onMapPress}
-    >
+      customMapStyle={retroMapStyle}>
       {clusters.map(renderMarker)}
     </MapView>
   );
