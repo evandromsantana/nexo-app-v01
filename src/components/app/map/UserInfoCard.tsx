@@ -1,11 +1,13 @@
 import { COLORS } from "@/constants";
 import { Feather } from "@expo/vector-icons";
 import { Link } from "expo-router";
+import { MotiView } from "moti";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Image,
-  LayoutAnimation,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -35,31 +37,52 @@ interface UserInfoCardProps {
 }
 
 const UserInfoCard = ({ user }: UserInfoCardProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [loadingImg, setLoadingImg] = useState(true);
 
   const toggleCard = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.spring); // Mudei para 'spring' para um efeito mais físico
     setIsExpanded(!isExpanded);
   };
 
   return (
     <View style={styles.overlay}>
-      <View style={styles.cardContainer}>
-        {/* Cabeçalho - A área de texto agora é o principal gatilho de expansão */}
+      <MotiView
+        from={{ opacity: 0, translateY: 40 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: "timing", duration: 350 }}
+        style={styles.cardContainer}>
+        {/* --- Cabeçalho --- */}
         <View style={styles.header}>
-          <Image
-            source={
-              user.photoUrl
-                ? { uri: user.photoUrl }
-                : require("../../../assets/default-avatar.png")
-            }
-            style={styles.cardAvatar}
-          />
+          <View style={{ position: "relative" }}>
+            {loadingImg && (
+              <ActivityIndicator
+                style={StyleSheet.absoluteFill}
+                color={COLORS.secondary}
+              />
+            )}
+            <Image
+              source={
+                user.photoUrl
+                  ? { uri: user.photoUrl }
+                  : require("../../../assets/default-avatar.png")
+              }
+              style={styles.cardAvatar}
+              onLoadEnd={() => setLoadingImg(false)}
+            />
+          </View>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
+          <Pressable
             onPress={toggleCard}
-            style={styles.infoContainer}>
+            accessibilityRole="button"
+            accessibilityLabel={
+              isExpanded
+                ? "Recolher informações do usuário"
+                : "Expandir informações do usuário"
+            }
+            style={({ pressed }) => [
+              styles.infoContainer,
+              pressed && { transform: [{ scale: 0.98 }] },
+            ]}>
             <Text style={styles.cardName} numberOfLines={1}>
               {user.displayName}
             </Text>
@@ -73,12 +96,15 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
                 color={COLORS.textSecondary}
               />
             </View>
-          </TouchableOpacity>
-          {/* AJUSTE: Botões aparecem na vista compacta */}
+          </Pressable>
+
+          {/* Botões no estado colapsado */}
           {!isExpanded && (
             <View style={styles.collapsedButtonContainer}>
               <Link href={`/user/${user.uid}`} asChild>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver perfil do usuário"
                   style={[
                     styles.circularButton,
                     styles.viewProfileButtonCollapsed,
@@ -88,6 +114,8 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
               </Link>
               <Link href={`/propose/${user.uid}`} asChild>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Enviar proposta"
                   style={[styles.circularButton, styles.proposeButton]}>
                   <Feather name="send" size={18} color={COLORS.white} />
                 </TouchableOpacity>
@@ -96,19 +124,27 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
           )}
         </View>
 
-        {/* --- Conteúdo Expansível --- */}
+        {/* --- Conteúdo expansível --- */}
         {isExpanded && (
-          <>
+          <MotiView
+            from={{ opacity: 0, translateY: -10 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "timing", duration: 250 }}>
             <ScrollView
               showsVerticalScrollIndicator={false}
               style={styles.expandedContent}>
-              {user.bio && (
+              {user.bio ? (
                 <>
                   <Text style={styles.cardSectionTitle}>Sobre</Text>
                   <Text style={styles.cardBio}>{user.bio}</Text>
                 </>
+              ) : (
+                <Text style={styles.emptyState}>
+                  Este usuário ainda não adicionou uma bio.
+                </Text>
               )}
-              {user.skillsToTeach?.length > 0 && (
+
+              {user.skillsToTeach?.length > 0 ? (
                 <>
                   <Text style={styles.cardSectionTitle}>Ensina</Text>
                   <View style={styles.skillContainer}>
@@ -120,13 +156,19 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
                     ))}
                   </View>
                 </>
+              ) : (
+                <Text style={styles.emptyState}>
+                  Nenhuma habilidade cadastrada.
+                </Text>
               )}
             </ScrollView>
 
-            {/* --- Botões de Ação para o estado expandido --- */}
+            {/* --- Botões no estado expandido --- */}
             <View style={styles.expandedButtonContainer}>
               <Link href={`/user/${user.uid}`} asChild>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver perfil do usuário"
                   style={[styles.cardButton, styles.viewProfileButtonExpanded]}>
                   <Feather name="user" size={18} color={COLORS.secondary} />
                   <Text style={styles.viewProfileButtonText}>Ver Perfil</Text>
@@ -134,20 +176,25 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
               </Link>
               <Link href={`/propose/${user.uid}`} asChild>
                 <TouchableOpacity
-                  style={[styles.cardButton, styles.proposeButton]}>
-                  <Feather name="send" size={18} color={COLORS.white} />
+                  accessibilityRole="button"
+                  accessibilityLabel="Enviar proposta"
+                  activeOpacity={0.85}
+                  style={styles.proposeButton}>
+                  <View style={styles.iconWrapper}>
+                    <Feather name="send" size={18} color={COLORS.white} />
+                  </View>
                   <Text style={styles.proposeButtonText}>Enviar Proposta</Text>
                 </TouchableOpacity>
               </Link>
             </View>
-          </>
+          </MotiView>
         )}
-      </View>
+      </MotiView>
     </View>
   );
 };
 
-// --- ESTILOS AJUSTADOS ---
+// --- ESTILOS ---
 const styles = StyleSheet.create({
   overlay: {
     position: "absolute",
@@ -161,10 +208,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 12,
     shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: COLORS.grayLight + "50",
   },
   header: {
     flexDirection: "row",
@@ -196,7 +244,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontFamily: "LeagueSpartan-Regular",
   },
-  // --- Botões para o estado colapsado ---
   collapsedButtonContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -213,9 +260,8 @@ const styles = StyleSheet.create({
   viewProfileButtonCollapsed: {
     backgroundColor: COLORS.grayLight,
   },
-  // --- Conteúdo expandido ---
   expandedContent: {
-    maxHeight: 250, // Limite de altura para o scroll
+    maxHeight: 250,
     marginTop: 16,
     paddingHorizontal: 4,
   },
@@ -232,7 +278,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 16,
   },
-  // ... estilos de SkillTag ...
+  emptyState: {
+    fontSize: 14,
+    color: COLORS.gray,
+    fontFamily: "LeagueSpartan-Regular",
+    fontStyle: "italic",
+    marginBottom: 16,
+  },
   skillContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -250,7 +302,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "LeagueSpartan-SemiBold",
   },
-  // --- Botões para o estado expandido ---
   expandedButtonContainer: {
     flexDirection: "row",
     gap: 10,
@@ -274,13 +325,29 @@ const styles = StyleSheet.create({
     borderColor: COLORS.grayLight,
   },
   proposeButton: {
-    flex: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4, // Android shadow
+    gap: 8,
+  },
+  iconWrapper: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    padding: 6,
+    borderRadius: 8,
   },
   proposeButtonText: {
     color: COLORS.white,
-    fontFamily: "LeagueSpartan-Bold",
     fontSize: 16,
+    fontWeight: "600",
   },
   viewProfileButtonText: {
     color: COLORS.secondary,
