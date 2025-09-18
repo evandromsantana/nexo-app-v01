@@ -40,7 +40,8 @@ const SkillTag = ({
     style={[styles.skillTag, isSelected && styles.selectedSkillTag]}>
     <Text
       style={[styles.skillTagText, isSelected && styles.selectedSkillTagText]}>
-      {`${skill.skillName} (x${skill.multiplier})`}
+      {skill.skillName}
+      {skill.multiplier && skill.multiplier !== 1 ? ` (x${skill.multiplier})` : ''}
     </Text>
   </TouchableOpacity>
 );
@@ -148,7 +149,7 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
             source={
               recipientUser.photoUrl
                 ? { uri: recipientUser.photoUrl }
-                : require("../../../assets/default-avatar.png")
+                : require("@/assets/default-avatar.png")
             }
             style={styles.cardAvatar}
           />

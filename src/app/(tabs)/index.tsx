@@ -11,7 +11,7 @@ import {
 import { Region } from "react-native-maps";
 import Supercluster from "supercluster";
 
-import { COLORS } from "@/constants/Colors";
+import { COLORS } from "@/constants";
 import { getUsers, updateUserLocation } from "../../api/firestore";
 import MapComponent, {
   ClusterItem,
@@ -232,6 +232,27 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {!locationLoading && !isUsersLoading && !region && users.length === 0 && (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>Não foi possível carregar o mapa ou encontrar usuários.</Text>
+          <Text style={styles.emptyStateSubText}>Verifique sua conexão ou permissões de localização.</Text>
+        </View>
+      )}
+
+      {!locationLoading && !isUsersLoading && region && users.length === 0 && !search && (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>Nenhum usuário encontrado na sua área.</Text>
+          <Text style={styles.emptyStateSubText}>Tente ajustar a busca ou o zoom.</Text>
+        </View>
+      )}
+
+      {!locationLoading && !isUsersLoading && region && filteredUsers.length === 0 && search && (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>Nenhum usuário corresponde à sua busca.</Text>
+          <Text style={styles.emptyStateSubText}>Tente outros termos de busca.</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -306,5 +327,26 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: COLORS.black,
     fontWeight: "500",
+  },
+  emptyStateContainer: {
+    position: "absolute",
+    top: "50%",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginTop: -50, // Adjust to center vertically
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  emptyStateSubText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
   },
 });

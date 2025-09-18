@@ -1,5 +1,6 @@
 import React from "react";
-import { View, TextInput, StyleSheet, Dimensions } from "react-native";
+import { View, TextInput, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
+import { Feather } from "@expo/vector-icons"; // Import Feather icon
 import { COLORS } from "@/constants";
 
 interface MapSearchInputProps {
@@ -15,12 +16,18 @@ const MapSearchInput: React.FC<MapSearchInputProps> = ({
 }) => {
   return (
     <View style={styles.searchContainer}>
+      <Feather name="search" size={20} color={COLORS.gray} style={styles.searchIcon} />
       <TextInput
         placeholder="Buscar usuário ou habilidade..."
         value={search}
         onChangeText={setSearch}
         style={styles.searchInput}
       />
+      {search.length > 0 && (
+        <TouchableOpacity onPress={() => setSearch("")} style={styles.clearButton}>
+          <Feather name="x-circle" size={20} color={COLORS.gray} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -39,8 +46,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 5,
+    flexDirection: "row", // Added for icon and clear button
+    alignItems: "center", // Added for icon and clear button
   },
-  searchInput: { width: "100%", fontSize: 16 },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1, // Take remaining space
+    fontSize: 16,
+  },
+  clearButton: {
+    marginLeft: 10,
+  },
 });
 
 export default MapSearchInput;
