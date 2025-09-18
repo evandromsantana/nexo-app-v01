@@ -1,13 +1,14 @@
 import { COLORS } from "@/constants";
+import { useAuth } from "@/hooks/useAuth";
+import { TaughtSkill, UserProfile } from "@/types/user";
 import { Feather } from "@expo/vector-icons";
-import { Link } from "expo-router";
-import { MotiView } from "moti";
-import React, { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
+  Alert,
   Image,
+  LayoutAnimation,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,9 +16,8 @@ import {
   UIManager,
   View,
 } from "react-native";
-import { UserProfile } from "../../../types/user";
+import { createProposal, getUserProfile } from "../../../api/firestore";
 
-// Habilitar LayoutAnimation para Android
 if (
   Platform.OS === "android" &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -25,10 +25,24 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const SkillTag = ({ text }: { text: string }) => (
-  <View style={styles.skillTag}>
-    <Text style={styles.skillTagText}>{text}</Text>
-  </View>
+// --- Componente SkillTag modificado ---
+const SkillTag = ({
+  skill,
+  isSelected,
+  onPress,
+}: {
+  skill: TaughtSkill;
+  isSelected: boolean;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    style={[styles.skillTag, isSelected && styles.selectedSkillTag]}>
+    <Text
+      style={[styles.skillTagText, isSelected && styles.selectedSkillTagText]}>
+      {`${skill.skillName} (x${skill.multiplier})`}
+    </Text>
+  </TouchableOpacity>
 );
 
 interface UserInfoCardProps {
@@ -36,58 +50,112 @@ interface UserInfoCardProps {
   onClose: () => void;
 }
 
-const UserInfoCard = ({ user }: UserInfoCardProps) => {
+const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
+  const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
+
   const [isExpanded, setIsExpanded] = useState(true);
-  const [loadingImg, setLoadingImg] = useState(true);
+  const [selectedSkill, setSelectedSkill] = useState<TaughtSkill | null>(null);
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    color: string;
+  } | null>(null);
+
+  // 1. Busca o perfil do usuário logado para checar o saldo
+  const { data: currentUserProfile } = useQuery({
+    queryKey: ["userProfile", currentUser?.uid],
+    queryFn: () => getUserProfile(currentUser!.uid),
+    enabled: !!currentUser,
+  });
+
+  // 2. Lógica de cálculo e verificação de saldo
+  useEffect(() => {
+    if (selectedSkill && currentUserProfile) {
+      const cost = 60 * selectedSkill.multiplier; // Hardcoded 60 min duration
+      if (currentUserProfile.timeBalance < cost) {
+        setFeedback({
+          message: `Saldo insuficiente (${currentUserProfile.timeBalance} min). Custo: ${cost} min.`,
+          color: COLORS.danger,
+        });
+      } else {
+        setFeedback({
+          message: `Custo da aula: ${cost} min.`,
+          color: COLORS.success,
+        });
+      }
+    } else {
+      setFeedback(null);
+    }
+  }, [selectedSkill, currentUserProfile]);
+
+  // 3. Mutação para criar a proposta
+  const { mutate: sendProposal, isPending } = useMutation({
+    mutationFn: async () => {
+      if (!currentUser || !selectedSkill) {
+        throw new Error("Usuário ou habilidade não selecionada.");
+      }
+      const cost = 60 * selectedSkill.multiplier;
+      if (!currentUserProfile || currentUserProfile.timeBalance < cost) {
+        throw new Error("Saldo de tempo insuficiente.");
+      }
+      await createProposal({
+        proposerId: currentUser.uid,
+        recipientId: recipientUser.uid,
+        skillName: selectedSkill.skillName,
+        proposedDuration: 60,
+        costInMinutes: cost,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["proposals", currentUser?.uid],
+      });
+      Alert.alert("Sucesso", "Sua proposta foi enviada!");
+      onClose(); // Fecha o card ao enviar
+    },
+    onError: (error: Error) => {
+      Alert.alert(
+        "Erro",
+        error.message || "Não foi possível enviar a proposta."
+      );
+    },
+  });
 
   const toggleCard = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
     setIsExpanded(!isExpanded);
   };
 
+  const handleSelectSkill = (skill: TaughtSkill) => {
+    setSelectedSkill((prev) =>
+      prev?.skillName === skill.skillName ? null : skill
+    );
+  };
+
+  const canPropose =
+    selectedSkill && currentUserProfile && feedback?.color !== COLORS.danger;
+
   return (
     <View style={styles.overlay}>
-      <MotiView
-        from={{ opacity: 0, translateY: 40 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: "timing", duration: 350 }}
-        style={styles.cardContainer}>
-        {/* --- Cabeçalho --- */}
+      <View style={styles.cardContainer}>
         <View style={styles.header}>
-          <View style={{ position: "relative" }}>
-            {loadingImg && (
-              <ActivityIndicator
-                style={StyleSheet.absoluteFill}
-                color={COLORS.secondary}
-              />
-            )}
-            <Image
-              source={
-                user.photoUrl
-                  ? { uri: user.photoUrl }
-                  : require("../../../assets/default-avatar.png")
-              }
-              style={styles.cardAvatar}
-              onLoadEnd={() => setLoadingImg(false)}
-            />
-          </View>
-
-          <Pressable
-            onPress={toggleCard}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isExpanded
-                ? "Recolher informações do usuário"
-                : "Expandir informações do usuário"
+          <Image
+            source={
+              recipientUser.photoUrl
+                ? { uri: recipientUser.photoUrl }
+                : require("../../../assets/default-avatar.png")
             }
-            style={({ pressed }) => [
-              styles.infoContainer,
-              pressed && { transform: [{ scale: 0.98 }] },
-            ]}>
+            style={styles.cardAvatar}
+          />
+          <View style={styles.infoContainer}>
             <Text style={styles.cardName} numberOfLines={1}>
-              {user.displayName}
+              {recipientUser.displayName}
             </Text>
-            <View style={styles.expandHint}>
-              <Text style={styles.topSkillText} numberOfLines={1}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={toggleCard}
+              style={styles.expandHint}>
+              <Text style={styles.topSkillText}>
                 {isExpanded ? "Ver menos" : "Ver mais"}
               </Text>
               <Feather
@@ -95,139 +163,89 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
                 size={16}
                 color={COLORS.textSecondary}
               />
-            </View>
-          </Pressable>
-
-          {/* Botões no estado colapsado */}
-          {!isExpanded && (
-            <View style={styles.collapsedButtonContainer}>
-              <Link href={`/user/${user.uid}`} asChild>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Ver perfil do usuário"
-                  style={[
-                    styles.circularButton,
-                    styles.viewProfileButtonCollapsed,
-                  ]}>
-                  <Feather name="user" size={18} color={COLORS.textPrimary} />
-                </TouchableOpacity>
-              </Link>
-              <Link href={`/propose/${user.uid}`} asChild>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Enviar proposta"
-                  style={[styles.circularButton, styles.proposeButton]}>
-                  <Feather name="send" size={18} color={COLORS.white} />
-                </TouchableOpacity>
-              </Link>
-            </View>
-          )}
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* --- Conteúdo expansível --- */}
         {isExpanded && (
-          <MotiView
-            from={{ opacity: 0, translateY: -10 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: "timing", duration: 250 }}>
+          <>
             <ScrollView
               showsVerticalScrollIndicator={false}
               style={styles.expandedContent}>
-              {user.bio ? (
+              {recipientUser.skillsToTeach?.length > 0 ? (
                 <>
-                  <Text style={styles.cardSectionTitle}>Sobre</Text>
-                  <Text style={styles.cardBio}>{user.bio}</Text>
-                </>
-              ) : (
-                <Text style={styles.emptyState}>
-                  Este usuário ainda não adicionou uma bio.
-                </Text>
-              )}
-
-              {user.skillsToTeach?.length > 0 ? (
-                <>
-                  <Text style={styles.cardSectionTitle}>Ensina</Text>
+                  <Text style={styles.cardSectionTitle}>
+                    Selecione uma habilidade para propor a troca
+                  </Text>
                   <View style={styles.skillContainer}>
-                    {user.skillsToTeach.map((skill, i) => (
+                    {recipientUser.skillsToTeach.map((skill, i) => (
                       <SkillTag
                         key={`${i}-teach`}
-                        text={`${skill.skillName} (x${skill.multiplier})`}
+                        skill={skill}
+                        isSelected={
+                          selectedSkill?.skillName === skill.skillName
+                        }
+                        onPress={() => handleSelectSkill(skill)}
                       />
                     ))}
                   </View>
+                  {feedback && (
+                    <Text
+                      style={[styles.feedbackText, { color: feedback.color }]}>
+                      {feedback.message}
+                    </Text>
+                  )}
                 </>
               ) : (
-                <Text style={styles.emptyState}>
-                  Nenhuma habilidade cadastrada.
+                <Text style={styles.feedbackText}>
+                  Este usuário não adicionou habilidades para ensinar.
                 </Text>
+              )}
+              {recipientUser.bio && (
+                <>
+                  <Text style={styles.cardSectionTitle}>Sobre</Text>
+                  <Text style={styles.cardBio}>{recipientUser.bio}</Text>
+                </>
               )}
             </ScrollView>
 
-            {/* --- Botões no estado expandido --- */}
             <View style={styles.expandedButtonContainer}>
-              <Link href={`/user/${user.uid}`} asChild>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Ver perfil do usuário"
-                  style={[styles.cardButton, styles.viewProfileButtonExpanded]}>
-                  <Feather name="user" size={18} color={COLORS.secondary} />
-                  <Text style={styles.viewProfileButtonText}>Ver Perfil</Text>
-                </TouchableOpacity>
-              </Link>
-              <Link href={`/propose/${user.uid}`} asChild>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Enviar proposta"
-                  activeOpacity={0.85}
-                  style={styles.proposeButton}>
-                  <View style={styles.iconWrapper}>
-                    <Feather name="send" size={18} color={COLORS.white} />
-                  </View>
-                  <Text style={styles.proposeButtonText}>Enviar Proposta</Text>
-                </TouchableOpacity>
-              </Link>
+              <TouchableOpacity
+                style={[
+                  styles.cardButton,
+                  styles.proposeButton,
+                  !canPropose && styles.disabledButton,
+                ]}
+                disabled={!canPropose || isPending}
+                onPress={() => sendProposal()}>
+                <Feather name="send" size={18} color={COLORS.white} />
+                <Text style={styles.proposeButtonText}>
+                  {isPending ? "Enviando..." : "Enviar Proposta"}
+                </Text>
+              </TouchableOpacity>
             </View>
-          </MotiView>
+          </>
         )}
-      </MotiView>
+      </View>
     </View>
   );
 };
 
-// --- ESTILOS ---
 const styles = StyleSheet.create({
-  overlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
-  },
+  overlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 12 },
   cardContainer: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: 12,
     shadowColor: COLORS.black,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: COLORS.grayLight + "50",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  cardAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
-  },
-  infoContainer: {
-    flex: 1,
-    justifyContent: "center",
-  },
+  header: { flexDirection: "row", alignItems: "center" },
+  cardAvatar: { width: 50, height: 50, borderRadius: 25, marginRight: 12 },
+  infoContainer: { flex: 1, justifyContent: "center" },
   cardName: {
     fontSize: 18,
     color: COLORS.textPrimary,
@@ -244,27 +262,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontFamily: "LeagueSpartan-Regular",
   },
-  collapsedButtonContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginLeft: 12,
-  },
-  circularButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  viewProfileButtonCollapsed: {
-    backgroundColor: COLORS.grayLight,
-  },
-  expandedContent: {
-    maxHeight: 250,
-    marginTop: 16,
-    paddingHorizontal: 4,
-  },
+  expandedContent: { maxHeight: 250, marginTop: 16, paddingHorizontal: 4 },
   cardSectionTitle: {
     fontSize: 16,
     color: COLORS.secondary,
@@ -278,34 +276,36 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 16,
   },
-  emptyState: {
-    fontSize: 14,
-    color: COLORS.gray,
-    fontFamily: "LeagueSpartan-Regular",
-    fontStyle: "italic",
-    marginBottom: 16,
-  },
   skillContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   skillTag: {
-    backgroundColor: COLORS.secondary + "20",
+    backgroundColor: COLORS.grayLight,
     borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
+  selectedSkillTag: { backgroundColor: COLORS.primary },
   skillTagText: {
-    color: COLORS.secondary,
+    color: COLORS.textPrimary,
     fontSize: 14,
     fontFamily: "LeagueSpartan-SemiBold",
+  },
+  selectedSkillTagText: { color: COLORS.white },
+  feedbackText: {
+    marginTop: 4,
+    marginBottom: 12,
+    fontSize: 14,
+    fontFamily: "LeagueSpartan-SemiBold",
+    textAlign: "center",
   },
   expandedButtonContainer: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 16,
+    marginTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.grayLight,
     paddingTop: 12,
@@ -317,40 +317,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingVertical: 14,
-  },
-  viewProfileButtonExpanded: {
     flex: 1,
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    borderColor: COLORS.grayLight,
   },
-  proposeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4, // Android shadow
-    gap: 8,
-  },
-  iconWrapper: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    padding: 6,
-    borderRadius: 8,
-  },
+  proposeButton: { backgroundColor: COLORS.primary },
+  disabledButton: { backgroundColor: COLORS.gray },
   proposeButtonText: {
     color: COLORS.white,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  viewProfileButtonText: {
-    color: COLORS.secondary,
     fontFamily: "LeagueSpartan-Bold",
     fontSize: 16,
   },
