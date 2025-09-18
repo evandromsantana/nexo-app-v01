@@ -31,7 +31,7 @@ const ProposeForm: React.FC<ProposeFormProps> = ({
         <Picker
           selectedValue={selectedSkillName}
           onValueChange={(itemValue) => setSelectedSkillName(itemValue)}>
-          {recipientProfile?.skillsToTeach.map((skill) => (
+          {recipientProfile?.skillsToTeach && recipientProfile.skillsToTeach.map((skill) => (
             <Picker.Item
               key={skill.skillName}
               label={`${skill.skillName} (Custo: ${60 * (skill.multiplier || 1)} min)`}

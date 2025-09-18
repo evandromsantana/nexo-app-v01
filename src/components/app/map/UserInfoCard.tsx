@@ -71,7 +71,7 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
   // 2. Lógica de cálculo e verificação de saldo
   useEffect(() => {
     if (selectedSkill && currentUserProfile) {
-      const cost = 60 * selectedSkill.multiplier; // Hardcoded 60 min duration
+      const cost = 60 * (selectedSkill.multiplier || 1); // Hardcoded 60 min duration
       if (currentUserProfile.timeBalance < cost) {
         setFeedback({
           message: `Saldo insuficiente (${currentUserProfile.timeBalance} min). Custo: ${cost} min.`,
@@ -94,7 +94,7 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
       if (!currentUser || !selectedSkill) {
         throw new Error("Usuário ou habilidade não selecionada.");
       }
-      const cost = 60 * selectedSkill.multiplier;
+      const cost = 60 * (selectedSkill.multiplier || 1);
       if (!currentUserProfile || currentUserProfile.timeBalance < cost) {
         throw new Error("Saldo de tempo insuficiente.");
       }
@@ -178,7 +178,7 @@ const UserInfoCard = ({ user: recipientUser, onClose }: UserInfoCardProps) => {
             <ScrollView
               showsVerticalScrollIndicator={false}
               style={styles.expandedContent}>
-              {recipientUser.skillsToTeach?.length > 0 ? (
+              {recipientUser.skillsToTeach && recipientUser.skillsToTeach.length > 0 ? (
                 <>
                   <View style={styles.skillContainer}>
                     <Text style={styles.cardSectionTitle}>

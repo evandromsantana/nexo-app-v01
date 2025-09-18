@@ -3,7 +3,6 @@ import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
   User as FirebaseUser,
-  getReactNativePersistence,
   onAuthStateChanged,
   setPersistence,
   signInWithEmailAndPassword,
@@ -26,6 +25,9 @@ interface AuthContextData {
     password: string,
     displayName: string
   ) => Promise<void>;
+  authError: Error | null;
+  isLoggingIn: boolean;
+  isRegistering: boolean;
 }
 
 export const AuthContext = createContext<AuthContextData>(
@@ -39,33 +41,39 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<Error | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
-    const setupPersistence = async () => {
-      if (Platform.OS === "web") {
-        await setPersistence(auth, browserLocalPersistence);
-      } else {
-        await setPersistence(
-          auth,
-          getReactNativePersistence(ReactNativeAsyncStorage)
-        );
-      }
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        setUser(firebaseUser);
-        setIsLoading(false);
-      });
-      return () => unsubscribe();
-    };
-
-    setupPersistence();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    setAuthError(null);
+    setIsLoggingIn(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      setAuthError(error);
+      throw error; // Re-throw to allow components to handle it
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const logout = async () => {
-    await signOut(auth);
+    setAuthError(null);
+    try {
+      await signOut(auth);
+    } catch (error: any) {
+      setAuthError(error);
+      throw error; // Re-throw to allow components to handle it
+    }
   };
 
   const register = async (
@@ -73,16 +81,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     password: string,
     displayName: string
   ) => {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    await createUserProfile(userCredential.user, displayName);
+    setAuthError(null);
+    setIsRegistering(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      await createUserProfile(userCredential.user, displayName);
+    } catch (error: any) {
+      setAuthError(error);
+      throw error; // Re-throw to allow components to handle it
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        logout,
+        register,
+        authError,
+        isLoggingIn,
+        isRegistering,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

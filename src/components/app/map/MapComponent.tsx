@@ -42,9 +42,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
 }) => {
   const renderMarker = useCallback((feature: ClusterItem) => {
     if ("cluster" in feature.properties) {
+      const clusterProps = feature.properties as ClusterFeature['properties'];
       return (
         <Marker
-          key={`cluster-${feature.properties.cluster_id}`}
+          key={`cluster-${clusterProps.cluster_id}`}
           coordinate={{
             latitude: feature.geometry.coordinates[1],
             longitude: feature.geometry.coordinates[0],
@@ -52,8 +53,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
           onPress={(e) => {
             e.stopPropagation();
             onClusterPress(
-              feature.properties.cluster_id,
-              feature.properties.point_count,
+              clusterProps.cluster_id,
+              clusterProps.point_count,
               feature.geometry.coordinates as [number, number]
             );
           }}

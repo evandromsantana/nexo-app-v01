@@ -17,16 +17,16 @@ const UserDetailDisplay: React.FC<UserDetailDisplayProps> = ({
 
       <View style={styles.skillsContainer}>
         <Text style={styles.skillsTitle}>Habilidades para Ensinar:</Text>
-        {userProfile.skillsToTeach.map((skill) => (
+        {userProfile.skillsToTeach && userProfile.skillsToTeach.map((skill) => (
           <Text key={skill.skillName} style={styles.skill}>
-            - {skill.skillName} (x{skill.multiplier})
+            - {skill.skillName} (x{skill.multiplier || 1})
           </Text>
         ))}
       </View>
 
       <View style={styles.skillsContainer}>
         <Text style={styles.skillsTitle}>Habilidades para Aprender:</Text>
-        {userProfile.skillsToLearn.map((skill) => (
+        {userProfile.skillsToLearn && userProfile.skillsToLearn.map((skill) => (
           <Text key={skill} style={styles.skill}>
             - {skill}
           </Text>

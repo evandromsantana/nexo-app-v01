@@ -33,7 +33,7 @@ const ProposalCard = ({
   ) => void;
   userProfiles: Record<string, UserProfile>;
   currentUserId: string | undefined;
-  currentUserProfile: UserProfile | undefined;
+  currentUserProfile: UserProfile | null | undefined;
 }) => {
   const otherUserId =
     type === "received" ? proposal.proposerId : proposal.recipientId;
