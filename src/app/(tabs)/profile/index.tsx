@@ -61,7 +61,7 @@ export default function ProfileScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
-        <ProfileHeader photoUrl={userProfile.photoUrl} displayName={userProfile.displayName} email={userProfile.email} />
+        <ProfileHeader photoUrl={userProfile.photoUrl} displayName={userProfile.displayName} email={userProfile.email || undefined} />
 
         <ProfileInfoBox title="Saldo de Tempo" content={`${userProfile?.timeBalance || 0} minutos`} />
 

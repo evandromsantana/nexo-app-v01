@@ -1,13 +1,28 @@
-import { getFirestore, doc, setDoc, serverTimestamp, updateDoc, collection, getDocs, query, where, getDoc, addDoc, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { User as FirebaseUser } from 'firebase/auth';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where
+} from 'firebase/firestore';
 import { geohashForLocation } from 'geofire-common';
 import { z } from 'zod';
-import { UserProfile, UserProfileSchema } from '../types/user';
-import { Chat, ChatWithId, ChatSchema, ChatWithIdSchema } from '../types/chat';
-import { Proposal, ProposalWithId, ProposalSchema, ProposalWithIdSchema, ProposalStatus } from '../types/proposal';
+import { ChatSchema, ChatWithId, ChatWithIdSchema } from '../types/chat';
 import { GiftedChatMessage, GiftedChatMessageSchema } from '../types/message';
+import { ProposalSchema, ProposalStatus, ProposalWithId, ProposalWithIdSchema } from '../types/proposal';
+import { UserProfile, UserProfileSchema } from '../types/user';
+import { db } from './firebase'; // Importa a instância 'db' já inicializada
 
-const db = getFirestore();
+// A linha "const db = getFirestore();" foi removida daqui
 
 export const createUserProfile = async (user: FirebaseUser, displayName: string) => {
   const userRef = doc(db, 'users', user.uid);
