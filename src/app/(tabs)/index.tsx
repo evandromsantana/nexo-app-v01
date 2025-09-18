@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Region } from "react-native-maps";
 import Supercluster from "supercluster";
 
@@ -23,6 +23,8 @@ export default function HomeScreen() {
   const [locationLoading, setLocationLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [selectedCluster, setSelectedCluster] = useState<{ clusterId: number; pointCount: number; coordinates: [number, number] } | null>(null);
+  const [clusterUsers, setClusterUsers] = useState<UserProfile[]>([]);
 
   // Get user location
   useEffect(() => {
@@ -60,7 +62,7 @@ export default function HomeScreen() {
       (u) =>
         u.displayName.toLowerCase().includes(s) ||
         (u.skillsToTeach || []).some((skill) =>
-          skill.skillName.toLowerCase().includes(s)
+          skill.skillName && skill.skillName.toLowerCase().includes(s)
         ) ||
         (u.skillsToLearn || []).some((skill) => skill.toLowerCase().includes(s))
     );
@@ -68,19 +70,55 @@ export default function HomeScreen() {
 
   // Supercluster index
   const clusterIndex = useMemo(() => {
-    const points: PointFeature[] = filteredUsers
-      .filter((u) => u.location)
-      .map((u) => ({
-        type: "Feature",
-        properties: { user: u },
-        geometry: {
-          type: "Point",
-          coordinates: [u.location!.longitude, u.location!.latitude] as [
-            number,
-            number
-          ],
-        },
-      }));
+    const points: PointFeature[] = [];
+    const locationsMap = new Map<string, UserProfile[]>();
+
+    // Group users by exact location
+    filteredUsers.forEach(u => {
+      if (u.location) {
+        const key = `${u.location.latitude},${u.location.longitude}`;
+        if (!locationsMap.has(key)) {
+          locationsMap.set(key, []);
+        }
+        locationsMap.get(key)?.push(u);
+      }
+    });
+
+    // Apply jitter to duplicate locations and create PointFeatures
+    locationsMap.forEach(usersAtLocation => {
+      if (usersAtLocation.length === 1) {
+        const u = usersAtLocation[0];
+        points.push({
+          type: "Feature",
+          properties: { user: u },
+          geometry: {
+            type: "Point",
+            coordinates: [u.location!.longitude, u.location!.latitude] as [
+              number,
+              number
+            ],
+          },
+        });
+      } else {
+        // Apply jitter for multiple users at the same exact location
+        usersAtLocation.forEach((u, index) => {
+          const jitter = 0.00005 * (index + 1); // Small, unique offset
+          const sign = index % 2 === 0 ? 1 : -1; // Alternate direction
+          points.push({
+            type: "Feature",
+            properties: { user: u },
+            geometry: {
+              type: "Point",
+              coordinates: [
+                u.location!.longitude + sign * jitter,
+                u.location!.latitude + sign * jitter,
+              ] as [number, number],
+            },
+          });
+        });
+      }
+    });
+
     const index = new Supercluster({ radius: 60, maxZoom: 20 });
     index.load(points);
     return index;
@@ -101,6 +139,21 @@ export default function HomeScreen() {
     ) as ClusterItem[];
   }, [clusterIndex, region]);
 
+  const handleClusterPress = (clusterId: number, pointCount: number, coordinates: [number, number]) => {
+    const leaves = (clusterIndex as any).getLeaves(clusterId, pointCount);
+    const usersInCluster = leaves.map((leaf: PointFeature) => (leaf.properties as { user: UserProfile }).user);
+    setSelectedCluster({ clusterId, pointCount, coordinates });
+    setClusterUsers(usersInCluster);
+    // Optionally zoom to the cluster location
+    setRegion(prev => prev ? { ...prev, latitude: coordinates[1], longitude: coordinates[0], latitudeDelta: prev.latitudeDelta / 2, longitudeDelta: prev.longitudeDelta / 2 } : null);
+  };
+
+  const handleMapPress = () => {
+    setSelectedUser(null);
+    setSelectedCluster(null);
+    setClusterUsers([]);
+  };
+
   if (locationLoading || isUsersLoading || !region) {
     return <MapLoadingState />;
   }
@@ -112,7 +165,8 @@ export default function HomeScreen() {
         setRegion={setRegion}
         clusters={clusters}
         onMarkerPress={setSelectedUser}
-        onMapPress={() => setSelectedUser(null)}
+        onClusterPress={handleClusterPress}
+        onMapPress={handleMapPress}
       />
 
       <MapSearchInput search={search} setSearch={setSearch} />
@@ -120,8 +174,29 @@ export default function HomeScreen() {
       {selectedUser && (
         <UserInfoCard
           user={selectedUser}
-          onClose={() => setSelectedUser(null)}
+          onClose={handleMapPress}
         />
+      )}
+
+      {selectedCluster && clusterUsers.length > 0 && (
+        <View style={styles.bottomSheetPlaceholder}>
+          <Text style={styles.bottomSheetTitle}>Usuários no Cluster ({selectedCluster.pointCount})</Text>
+          {clusterUsers.map(u => (
+            <View key={u.uid} style={styles.bottomSheetItem}>
+              <Text>{u.displayName}</Text>
+              <TouchableOpacity onPress={() => {
+                setSelectedUser(u);
+                setSelectedCluster(null);
+                setClusterUsers([]);
+              }}>
+                <Text>Ver Perfil</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity onPress={handleMapPress}>
+            <Text style={styles.closeButton}>Fechar</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -129,4 +204,37 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  bottomSheetPlaceholder: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  bottomSheetItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  closeButton: {
+    marginTop: 15,
+    color: 'blue',
+    textAlign: 'center',
+  },
 });

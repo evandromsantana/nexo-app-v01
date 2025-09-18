@@ -28,6 +28,7 @@ interface MapComponentProps {
   setRegion: (region: Region) => void;
   clusters: ClusterItem[];
   onMarkerPress: (user: UserProfile) => void;
+  onClusterPress: (clusterId: number, pointCount: number, coordinates: [number, number]) => void;
   onMapPress: () => void;
 }
 
@@ -36,6 +37,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   setRegion,
   clusters,
   onMarkerPress,
+  onClusterPress,
   onMapPress,
 }) => {
   const renderMarker = useCallback((feature: ClusterItem) => {
@@ -47,7 +49,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
             latitude: feature.geometry.coordinates[1],
             longitude: feature.geometry.coordinates[0],
           }}
-          onPress={(e) => e.stopPropagation()} // Prevent map press on cluster press
+          onPress={(e) => {
+            e.stopPropagation();
+            onClusterPress(
+              feature.properties.cluster_id,
+              feature.properties.point_count,
+              feature.geometry.coordinates as [number, number]
+            );
+          }}
         >
           <View style={styles.cluster}>
             <Text style={styles.clusterText}>
@@ -85,7 +94,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </Marker>
       );
     }
-  }, [onMarkerPress]);
+  }, [onMarkerPress, onClusterPress]);
 
   return (
     <MapView

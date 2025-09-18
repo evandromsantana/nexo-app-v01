@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Usuários podem ler qualquer perfil, mas só escrever no seu próprio
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+
+    // Regras para a coleção 'proposals'
+    match /proposals/{proposalId} {
+      // Permite ler se for o proponente ou o destinatário
+      allow read: if request.auth.uid == resource.data.proposerId || request.auth.uid == resource.data.recipientId;
+      
+      // Permite criar se o usuário estiver autenticado
+      allow create: if request.auth != null;
+      
+      // Permite ATUALIZAR (aceitar/recusar) apenas se for o DESTINATÁRIO da proposta
+      allow update: if request.auth.uid == resource.data.recipientId;
+      
+      // Nega a exclusão por qualquer pessoa para manter o histórico
+      allow delete: if false;
+    }
+
+    // Adicione aqui futuras regras para outras coleções (ex: chat)
+  }
+}
