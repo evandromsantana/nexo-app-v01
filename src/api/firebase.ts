@@ -1,10 +1,12 @@
-// Imports atualizados para incluir persistência
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage'; // Importamos o AsyncStorage
+// Imports atualizados para usar o caminho oficial do Firebase v9+
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from 'firebase/app';
 import {
   getReactNativePersistence,
-  initializeAuth
-} from 'firebase/auth'; // Trocamos getAuth por initializeAuth
+  initializeAuth, // ✅ Usando a importação oficial
+  Persistence
+} from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // Sua configuração do Firebase (continua a mesma)
 const firebaseConfig = {
@@ -16,13 +18,16 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Inicializa o Firebase (continua o mesmo)
+// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
 
-// ✅ CORREÇÃO: Inicializa o Firebase Auth com persistência para React Native
+// Inicializa o Firebase Auth com persistência
 const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage) as Persistence
 });
 
-// Exporta a instância do auth
-export { auth };
+// Inicializa o Firestore
+const db = getFirestore(app);
+
+// Exporta tanto o auth quanto o db
+export { auth, db };

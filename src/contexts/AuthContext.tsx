@@ -1,9 +1,18 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { User as FirebaseUser, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import { auth } from '../api/firebase';
-import { createUserProfile } from '../api/firestore';
+import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  browserLocalPersistence,
+  createUserWithEmailAndPassword,
+  User as FirebaseUser,
+  onAuthStateChanged,
+  setPersistence,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+import React, { createContext, ReactNode, useEffect, useState } from "react";
+import { Platform } from "react-native";
+import { auth } from "../api/firebase";
+
+import { createUserProfile } from "../api/firestore";
 
 type User = FirebaseUser;
 
@@ -12,10 +21,16 @@ interface AuthContextData {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+export const AuthContext = createContext<AuthContextData>(
+  {} as AuthContextData
+);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -27,7 +42,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const setupPersistence = async () => {
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         await setPersistence(auth, browserLocalPersistence);
       } else {
         await setPersistence(auth, ReactNativeAsyncStorage as any);
@@ -50,8 +65,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await signOut(auth);
   };
 
-  const register = async (email: string, password: string, displayName: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const register = async (
+    email: string,
+    password: string,
+    displayName: string
+  ) => {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
     await createUserProfile(userCredential.user, displayName);
   };
 
