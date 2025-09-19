@@ -1,15 +1,16 @@
+import { COLORS } from "@/constants";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
+  ActivityIndicator,
   FlatList,
+  Image,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
-  Pressable,
-  Image,
-  ActivityIndicator,
 } from "react-native";
-import { COLORS } from "@/constants";
 import { ProposalWithId } from "../../../types/proposal";
 import { UserProfile } from "../../../types/user";
 
@@ -25,14 +26,12 @@ const ProposalCard = ({
 }: {
   proposal: ProposalWithId;
   type: "received" | "sent" | "pending";
-  onUpdate: (
-    variables: {
-      proposalId: string;
-      status: "accepted" | "declined" | "completed";
-      proposerId: string;
-      recipientId: string;
-    }
-  ) => void;
+  onUpdate: (variables: {
+    proposalId: string;
+    status: "accepted" | "declined" | "completed";
+    proposerId: string;
+    recipientId: string;
+  }) => void;
   userProfiles: Record<string, UserProfile>;
   currentUserId: string | undefined;
   currentUserProfile: UserProfile | null | undefined;
@@ -70,7 +69,8 @@ const ProposalCard = ({
         balanceMessage = `Proponente tem ${payerBalance} min. Saldo insuficiente para ${cost} min.`;
         balanceColor = COLORS.danger;
       }
-    } else { // type === "sent"
+    } else {
+      // type === "sent"
       // Current user is proposer, current user needs to pay
       payerBalance = currentUserProfile.timeBalance || 0;
       if (payerBalance >= cost) {
@@ -86,21 +86,20 @@ const ProposalCard = ({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Image
-          source={
-            otherUser?.photoUrl
-              ? { uri: otherUser.photoUrl }
-              : require("../../../assets/default-avatar.png")
-          }
-          style={styles.avatar}
-        />
+        {otherUser?.photoUrl ? (
+          <Image source={{ uri: otherUser.photoUrl }} style={styles.avatar} />
+        ) : (
+          <Ionicons name="person-circle" size={40} color="#355070" /> // 👈 ícone nativo do Expo
+        )}
         <View>
           <Text style={styles.cardText}>
             {type === "received"
               ? `De: ${otherUser?.displayName || "..."}`
               : `Para: ${otherUser?.displayName || "..."}`}
           </Text>
-          <Text style={styles.cardSkill}>Habilidade: {String(proposal.skillName)}</Text>
+          <Text style={styles.cardSkill}>
+            Habilidade: {String(proposal.skillName)}
+          </Text>
         </View>
       </View>
 
@@ -123,7 +122,7 @@ const ProposalCard = ({
             <Pressable
               style={[styles.button, styles.buttonAccept]}
               onPress={() => handleUpdate("accepted")}
-              disabled={isUpdatingProposal}> 
+              disabled={isUpdatingProposal}>
               {isUpdatingProposal ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
@@ -133,7 +132,7 @@ const ProposalCard = ({
             <Pressable
               style={[styles.button, styles.buttonDecline]}
               onPress={() => handleUpdate("declined")}
-              disabled={isUpdatingProposal}> 
+              disabled={isUpdatingProposal}>
               {isUpdatingProposal ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
@@ -157,7 +156,7 @@ const ProposalCard = ({
           <Pressable
             style={[styles.button, styles.buttonComplete]}
             onPress={() => handleUpdate("completed")}
-            disabled={isUpdatingProposal}> 
+            disabled={isUpdatingProposal}>
             {isUpdatingProposal ? (
               <ActivityIndicator size="small" color={COLORS.white} />
             ) : (
@@ -176,14 +175,12 @@ interface ProposalListProps {
   userProfiles: Record<string, UserProfile>;
   currentUserId: string | undefined;
   currentUserProfile: UserProfile | null | undefined;
-  onUpdate: (
-    variables: {
-      proposalId: string;
-      status: "accepted" | "declined" | "completed";
-      proposerId: string;
-      recipientId: string;
-    }
-  ) => void;
+  onUpdate: (variables: {
+    proposalId: string;
+    status: "accepted" | "declined" | "completed";
+    proposerId: string;
+    recipientId: string;
+  }) => void;
   onRefresh: () => void;
   refreshing: boolean;
   emptyMessage: string;
@@ -275,7 +272,12 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   cardDate: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 5 },
-  cardStatus: { fontSize: 14, fontStyle: "italic", color: COLORS.secondary, marginBottom: 5 },
+  cardStatus: {
+    fontSize: 14,
+    fontStyle: "italic",
+    color: COLORS.secondary,
+    marginBottom: 5,
+  },
   balanceText: { fontSize: 14, fontWeight: "bold", marginBottom: 10 },
   buttonGroup: {
     flexDirection: "row",
@@ -302,15 +304,14 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: COLORS.background,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   statusFeedbackText: {
     color: COLORS.textSecondary,
     fontSize: 14,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   emptyText: { textAlign: "center", color: COLORS.grayDark, marginTop: 20 },
 });
 
 export default ProposalList;
-

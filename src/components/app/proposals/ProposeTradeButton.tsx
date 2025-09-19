@@ -5,9 +5,7 @@ interface ProposeTradeButtonProps {
   onPress: () => void;
 }
 
-const ProposeTradeButton: React.FC<ProposeTradeButtonProps> = ({
-  onPress,
-}) => {
+const ProposeTradeButton: React.FC<ProposeTradeButtonProps> = ({ onPress }) => {
   return <Button title="Propor Troca" onPress={onPress} />;
 };
 
