@@ -161,7 +161,7 @@ export default function ProposalsScreen() {
         onRefresh={refetchProposals}
         refreshing={isRefetching}
         emptyMessage={emptyMessage}
-        isUpdatingProposal={isUpdatingProposal} // Added this prop
+        isUpdatingProposal={isUpdatingProposal}
       />
     </View>
   );

@@ -1,10 +1,11 @@
-import React, { useCallback } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons"; // 👥 Ícones
+import React, { useCallback, useEffect, useRef } from "react";
+import { Animated, Image, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 
 import { COLORS } from "@/constants";
 import { retroMapStyle } from "@/constants/MapStyles";
-import { UserProfile } from "../../../types/user"; // Importar UserProfile
+import { UserProfile } from "../../../types/user";
 
 // --- TYPE DEFINITIONS ---
 export interface PointFeature {
@@ -45,6 +46,40 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onClusterPress,
   onMapPress,
 }) => {
+  const scale = useRef(new Animated.Value(0)).current; // começa invisível
+
+  // 🔥 Animação de pulso + entrada com bounce
+  useEffect(() => {
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 5,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scale, {
+            toValue: 1.15,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ),
+    ]).start();
+  }, []);
+
+  const getClusterStyle = (count: number) => {
+    if (count < 10) return styles.clusterSmall;
+    if (count < 50) return styles.clusterMedium;
+    return styles.clusterLarge;
+  };
+
   const renderMarker = useCallback(
     (feature: ClusterItem) => {
       if ("cluster" in feature.properties) {
@@ -64,11 +99,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 feature.geometry.coordinates as [number, number]
               );
             }}>
-            <View style={styles.cluster}>
-              <Text style={styles.clusterText}>
-                {feature.properties.point_count}
-              </Text>
-            </View>
+            <Animated.View
+              style={[
+                styles.clusterBase,
+                getClusterStyle(clusterProps.point_count),
+                { transform: [{ scale }] },
+              ]}>
+              <Ionicons
+                name="people"
+                size={18}
+                color={COLORS.white}
+                style={{ marginBottom: 2 }}
+              />
+              <Text style={styles.clusterText}>{clusterProps.point_count}</Text>
+            </Animated.View>
           </Marker>
         );
       } else {
@@ -87,7 +131,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               longitude: feature.geometry.coordinates[0],
             }}
             onPress={(e) => {
-              e.stopPropagation(); // Prevent map press from firing
+              e.stopPropagation();
               onMarkerPress(user);
             }}>
             <View style={styles.avatarMarker}>
@@ -119,6 +163,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
 const styles = StyleSheet.create({
   map: { ...StyleSheet.absoluteFillObject },
+
+  // --- Avatar marker ---
   avatarMarker: {
     width: 40,
     height: 40,
@@ -132,17 +178,42 @@ const styles = StyleSheet.create({
   },
   avatarImage: { width: "100%", height: "100%" },
   avatarInitials: { color: COLORS.white, fontWeight: "bold" },
-  cluster: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.accent,
+
+  // --- Cluster estilo Waze ---
+  clusterBase: {
     justifyContent: "center",
     alignItems: "center",
+    borderRadius: 50,
     borderWidth: 2,
     borderColor: COLORS.white,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    padding: 4,
   },
-  clusterText: { color: COLORS.white, fontWeight: "bold" },
+  clusterSmall: {
+    width: 48,
+    height: 48,
+    backgroundColor: "#4CAF50", // Verde (poucos usuários)
+  },
+  clusterMedium: {
+    width: 58,
+    height: 58,
+    backgroundColor: "#FF9800", // Laranja (médio)
+  },
+  clusterLarge: {
+    width: 70,
+    height: 70,
+    backgroundColor: "#F44336", // Vermelho (muitos)
+  },
+  clusterText: {
+    color: COLORS.white,
+    fontWeight: "bold",
+    fontSize: 15,
+    marginTop: -2,
+  },
 });
 
 export default MapComponent;
