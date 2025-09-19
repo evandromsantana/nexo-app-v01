@@ -1,6 +1,6 @@
 import { COLORS } from "@/constants";
+import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Home, Mail, MessageSquare, User } from "lucide-react-native";
 import React from "react";
 
 export default function TabLayout() {
@@ -8,7 +8,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.grayDark,
+        tabBarInactiveTintColor: COLORS.gray,
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopWidth: 0,
@@ -19,14 +19,18 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Início",
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="proposals"
         options={{
           title: "Propostas",
-          tabBarIcon: ({ color, size }) => <Mail color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="mail" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -34,7 +38,7 @@ export default function TabLayout() {
         options={{
           title: "Chat",
           tabBarIcon: ({ color, size }) => (
-            <MessageSquare color={color} size={size} />
+            <Ionicons name="chatbox" size={size} color={color} />
           ),
         }}
       />
@@ -42,7 +46,9 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Perfil",
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
