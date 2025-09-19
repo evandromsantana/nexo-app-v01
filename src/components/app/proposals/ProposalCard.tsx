@@ -1,7 +1,5 @@
 import React from "react";
 import {
-  FlatList,
-  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -13,16 +11,7 @@ import { COLORS } from "@/constants";
 import { ProposalWithId } from "../../../types/proposal";
 import { UserProfile } from "../../../types/user";
 
-// Componente de cartão de proposta
-const ProposalCard = ({
-  proposal,
-  type,
-  onUpdate,
-  userProfiles,
-  currentUserId,
-  currentUserProfile,
-  isUpdatingProposal, // Added this prop
-}: {
+interface ProposalCardProps {
   proposal: ProposalWithId;
   type: "received" | "sent" | "pending";
   onUpdate: (
@@ -36,8 +25,18 @@ const ProposalCard = ({
   userProfiles: Record<string, UserProfile>;
   currentUserId: string | undefined;
   currentUserProfile: UserProfile | null | undefined;
-  isUpdatingProposal: boolean; // Added this prop
-}) => {
+  isUpdatingProposal: boolean;
+}
+
+const ProposalCard = ({
+  proposal,
+  type,
+  onUpdate,
+  userProfiles,
+  currentUserId,
+  currentUserProfile,
+  isUpdatingProposal,
+}: ProposalCardProps) => {
   const otherUserId =
     type === "received" ? proposal.proposerId : proposal.recipientId;
   const otherUser = userProfiles[otherUserId];
@@ -169,82 +168,7 @@ const ProposalCard = ({
   );
 };
 
-interface ProposalListProps {
-  title?: string;
-  type: "received" | "sent" | "pending";
-  proposals: ProposalWithId[];
-  userProfiles: Record<string, UserProfile>;
-  currentUserId: string | undefined;
-  currentUserProfile: UserProfile | null | undefined;
-  onUpdate: (
-    variables: {
-      proposalId: string;
-      status: "accepted" | "declined" | "completed";
-      proposerId: string;
-      recipientId: string;
-    }
-  ) => void;
-  onRefresh: () => void;
-  refreshing: boolean;
-  emptyMessage: string;
-  isUpdatingProposal: boolean; // Added this prop
-}
-
-const ProposalList: React.FC<ProposalListProps> = ({
-  title,
-  type,
-  proposals,
-  userProfiles,
-  currentUserId,
-  currentUserProfile,
-  onUpdate,
-  onRefresh,
-  refreshing,
-  emptyMessage,
-  isUpdatingProposal, // Added this prop
-}) => {
-  return (
-    <>
-      {title && <Text style={styles.title}>{title}</Text>}
-      <FlatList
-        data={proposals}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ProposalCard
-            proposal={item}
-            type={type}
-            onUpdate={onUpdate}
-            userProfiles={userProfiles}
-            currentUserId={currentUserId}
-            currentUserProfile={currentUserProfile}
-            isUpdatingProposal={isUpdatingProposal} // Added this prop
-          />
-        )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>{emptyMessage}</Text>
-        }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        contentContainerStyle={styles.flatListContentContainer} // Added this
-      />
-    </>
-  );
-};
-
 const styles = StyleSheet.create({
-  flatListContentContainer: {
-    paddingTop: 10, // Adjust this value as needed
-    paddingBottom: 20, // Add some padding to the bottom as well
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    marginTop: 20,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
   card: {
     backgroundColor: COLORS.card,
     padding: 15,
@@ -309,8 +233,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: 'italic',
   },
-  emptyText: { textAlign: "center", color: COLORS.grayDark, marginTop: 20 },
 });
 
-export default ProposalList;
-
+export default ProposalCard;

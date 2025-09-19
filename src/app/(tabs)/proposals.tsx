@@ -1,10 +1,12 @@
 import { COLORS } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
-import { UserProfile } from "@/types/user";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { getProposalsForUser, updateProposalStatus } from "../../api/firestore/proposal";
+import {
+  getProposalsForUser,
+  updateProposalStatus,
+} from "../../api/firestore/proposal";
 import { fetchUserProfiles, getUserProfile } from "../../api/firestore/user";
 import ProposalList from "../../components/app/proposals/ProposalList";
 import LoadingIndicator from "../../components/ui/LoadingIndicator";
@@ -12,7 +14,9 @@ import LoadingIndicator from "../../components/ui/LoadingIndicator";
 export default function ProposalsScreen() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
+  const [activeTab, setActiveTab] = useState<"received" | "sent" | "pending">(
+    "received"
+  );
 
   // 1. Query to fetch proposals
   const {
@@ -50,37 +54,55 @@ export default function ProposalsScreen() {
   });
 
   // 3. Mutation to update proposal status
-  const { mutate: handleUpdateStatus, isPending: isUpdatingProposal } = useMutation({
-    mutationFn: (variables: {
-      proposalId: string;
-      status: "accepted" | "declined" | "completed";
-      proposerId: string;
-      recipientId: string;
-    }) =>
-      updateProposalStatus(
-        variables.proposalId,
-        variables.status
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["proposals", user?.uid] });
-      Alert.alert("Sucesso", "Status da proposta atualizado com sucesso!");
-    },
-    onError: (error: any) => {
-      console.error("Failed to update proposal status:", error);
-      Alert.alert("Erro", error.message || "Não foi possível atualizar o status da proposta.");
-    },
-  });
+  const { mutate: handleUpdateStatus, isPending: isUpdatingProposal } =
+    useMutation({
+      mutationFn: (variables: {
+        proposalId: string;
+        status: "accepted" | "declined" | "completed";
+        proposerId: string;
+        recipientId: string;
+      }) => updateProposalStatus(variables.proposalId, variables.status),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["proposals", user?.uid] });
+        Alert.alert("Sucesso", "Status da proposta atualizado com sucesso!");
+      },
+      onError: (error: any) => {
+        console.error("Failed to update proposal status:", error);
+        Alert.alert(
+          "Erro",
+          error.message || "Não foi possível atualizar o status da proposta."
+        );
+      },
+    });
+
+  // Define variables for the active tab before the main return
+  const activeProposals = useMemo(() => {
+    if (activeTab === "received") {
+      return proposals.received;
+    } else if (activeTab === "sent") {
+      return proposals.sent;
+    } else {
+      // activeTab === "pending"
+      return [...proposals.received, ...proposals.sent].filter(
+        (p) => p.status === "pending"
+      );
+    }
+  }, [activeTab, proposals]);
+
+  const emptyMessage = useMemo(() => {
+    if (activeTab === "received") {
+      return "Nenhuma proposta recebida.";
+    } else if (activeTab === "sent") {
+      return "Nenhuma proposta enviada.";
+    } else {
+      // activeTab === "pending"
+      return "Nenhuma proposta pendente.";
+    }
+  }, [activeTab]);
 
   if (proposalsLoading || profilesLoading) {
     return <LoadingIndicator />;
   }
-
-  // Define variables for the active tab before the main return
-  const activeProposals = proposals[activeTab];
-  const emptyMessage =
-    activeTab === "received"
-      ? "Nenhuma proposta recebida."
-      : "Nenhuma proposta enviada.";
 
   return (
     <View style={styles.container}>
@@ -113,6 +135,20 @@ export default function ProposalsScreen() {
             Enviadas
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === "pending" && styles.activeTabButton,
+          ]}
+          onPress={() => setActiveTab("pending")}>
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === "pending" && styles.activeTabButtonText,
+            ]}>
+            Pendentes
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ProposalList
@@ -132,10 +168,14 @@ export default function ProposalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10, backgroundColor: COLORS.background },
+  container: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: COLORS.background,
+  },
   tabContainer: {
     flexDirection: "row",
-    marginBottom: 10,
+    marginTop: 30,
     backgroundColor: COLORS.card,
     borderRadius: 10,
     overflow: "hidden",
@@ -145,18 +185,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    borderRadius: 8, // Added for pill shape
   },
   activeTabButton: {
-    borderBottomColor: COLORS.primary,
+    backgroundColor: COLORS.primary, // Changed to background color
   },
   tabButtonText: {
     fontSize: 16,
+    fontWeight: "bold",
     fontFamily: "LeagueSpartan-SemiBold",
     color: COLORS.textSecondary,
   },
   activeTabButtonText: {
-    color: COLORS.primary,
+    color: COLORS.white, // Changed text color for contrast
   },
 });
